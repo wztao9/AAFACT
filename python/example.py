@@ -9,13 +9,11 @@ print("-" * 50)
 # Use absolute paths based on script location
 script_dir = os.path.dirname(os.path.abspath(__file__))
 bone_file = os.path.join(script_dir, 'example_data', 'talus_left.stl')
-template_file = os.path.join(os.path.dirname(script_dir), 'Template_Bones', 'Talus_Template.stl')
 
-if os.path.exists(bone_file) and os.path.exists(template_file):
+if os.path.exists(bone_file):
     try:
         coords, coords_unit = process_bone(
             bone_file=bone_file,
-            template_file=template_file,
             bone_type='talus',
             side='left',
             output_dir='example_output'
@@ -30,7 +28,6 @@ if os.path.exists(bone_file) and os.path.exists(template_file):
 else:
     print("⚠ Example files not found - this is a demonstration")
     print(f"  Looking for: {bone_file}")
-    print(f"  and: {template_file}")
     print("  Update paths to process your actual bone files")
 
 print("\n")
@@ -40,26 +37,23 @@ print("Example 2: Batch processing")
 print("-" * 50)
 
 bones_to_process = [
-    ('talus', 'left', 'Talus_Template.stl'),
-    ('calcaneus', 'left', 'Calcaneus_Template.stl'),
-    ('navicular', 'left', 'Navicular_Template.stl'),
+    ('talus', 'left'),
+    ('calcaneus', 'left'),
+    ('navicular', 'left'),
 ]
 
 # Use absolute paths based on script location
 script_dir = os.path.dirname(os.path.abspath(__file__))
-template_dir = os.path.join(os.path.dirname(script_dir), 'Template_Bones')
 data_dir = 'example_data'  # Replace with your data directory (or use absolute path)
 output_dir = 'batch_output'
 
-for bone_type, side, template_name in bones_to_process:
+for bone_type, side in bones_to_process:
     bone_file = os.path.join(data_dir, f'{bone_type}_{side}.stl')
-    template_file = os.path.join(template_dir, template_name)
     
     if os.path.exists(bone_file):
         try:
             coords, coords_unit = process_bone(
                 bone_file=bone_file,
-                template_file=template_file,
                 bone_type=bone_type,
                 side=side,
                 output_dir=output_dir

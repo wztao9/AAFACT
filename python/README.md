@@ -34,10 +34,9 @@ python pipeline.py
 ```python
 from pipeline import process_bone
 
-# Process a single bone with default coordinate system
+# Process a single bone with default coordinate system (templates auto-selected)
 coords, coords_unit = process_bone(
     bone_file='path/to/talus.stl',
-    template_file='../Template_Bones/Talus_Template.stl',
     bone_type='talus',
     side='left',
     output_dir='output'
@@ -46,7 +45,6 @@ coords, coords_unit = process_bone(
 # Process talus with Tibiotalar coordinate system
 coords, coords_unit = process_bone(
     bone_file='path/to/talus.stl',
-    template_file='../Template_Bones/Talus_Template.stl',
     bone_type='talus',
     side='left',
     coord_sys='tibiotalar',  # Specify coordinate system type
@@ -62,7 +60,6 @@ Modify the `examples` list in `pipeline.py`:
 examples = [
     {
         'bone_file': 'data/subject01_talus_left.stl',
-        'template_file': os.path.join(template_dir, 'Talus_Template.stl'),
         'bone_type': 'talus',
         'side': 'left',
         'coord_sys': 'tibiotalar'  # Optional: specify coordinate system type

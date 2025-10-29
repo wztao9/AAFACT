@@ -31,10 +31,8 @@ def test_talus_tibiotalar():
     # File paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
     bone_file = os.path.join(os.path.dirname(script_dir), 'Template_Bones', 'Talus_Template2.stl')
-    template_file = os.path.join(os.path.dirname(script_dir), 'Template_Bones', 'Talus_Template.stl')
     
     print(f"\nInput bone: {bone_file}")
-    print(f"Template: {template_file}")
     print(f"Bone type: talus (Tibiotalar CS)")
     print(f"Side: left")
     print(f"Origin: center")
@@ -43,7 +41,6 @@ def test_talus_tibiotalar():
     try:
         coords, coords_unit = process_bone(
             bone_file=bone_file,
-            template_file=template_file,
             bone_type='talus',
             side='left',
             coord_sys='tibiotalar',  # Specify Tibiotalar CS

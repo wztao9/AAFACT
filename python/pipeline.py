@@ -53,7 +53,8 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
     # If secondary template provided (for TT/ST talus), do additional alignment
     sR = None
     if secondary_template is not None:
-        # Align secondary template to primary template
+        # Align primary template to secondary template
+        # MATLAB: icp(nodes_template2', nodes_template', ...) aligns template to template2
         sR, _, _ = icp(secondary_template, template_points, max_iterations=25)
         # Apply this rotation to the aligned points
         best_aligned = (sR @ best_aligned.T).T
@@ -61,16 +62,16 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
     return best_aligned, best_R, best_T, sR
 
 
-def process_bone(bone_file, template_file, bone_type='talus', side='left', 
-                 coord_sys='default', output_dir='output'):
+def process_bone(bone_file, bone_type='talus', side='left', 
+                 coord_sys='default', template_dir=None, output_dir='output'):
     """Process a single bone and compute anatomical coordinate system.
     
     Args:
         bone_file: Path to bone model file
-        template_file: Path to template bone file
         bone_type: Type of bone
         side: Laterality (left/right)
         coord_sys: Coordinate system type (default, tibiotalar, subtalar, etc.)
+        template_dir: Directory containing template files (default: ../Template_Bones relative to script)
         output_dir: Output directory for results
         
     Returns:
@@ -79,18 +80,57 @@ def process_bone(bone_file, template_file, bone_type='talus', side='left',
     """
     print(f"Processing {bone_type} ({side})...")
     
+    # Determine template directory if not provided
+    if template_dir is None:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        template_dir = os.path.join(os.path.dirname(script_dir), 'Template_Bones')
+    
+    # Determine which template(s) to use based on bone_type and coord_sys
+    template_file = None
+    secondary_template_file = None
+    
+    if bone_type == 'talus':
+        if coord_sys in ['default', 'talonavicular']:
+            template_file = os.path.join(template_dir, 'Talus_Template.stl')
+        elif coord_sys in ['tibiotalar', 'subtalar']:
+            template_file = os.path.join(template_dir, 'Talus_Template.stl')
+            secondary_template_file = os.path.join(template_dir, 'Talus_Template2.stl')
+    elif bone_type == 'calcaneus':
+        if coord_sys in ['default', 'calcaneocuboid']:
+            template_file = os.path.join(template_dir, 'Calcaneus_Template.stl')
+        elif coord_sys == 'subtalar':
+            template_file = os.path.join(template_dir, 'Calcaneus_Template2.stl')
+    elif bone_type == 'navicular':
+        template_file = os.path.join(template_dir, 'Navicular_Template.stl')
+    elif bone_type == 'cuboid':
+        if coord_sys == 'default':
+            template_file = os.path.join(template_dir, 'Cuboid_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Cuboid_Template2.stl')
+    elif bone_type == 'cuneiform':
+        # Would need more specific handling for medial/intermediate/lateral
+        template_file = os.path.join(template_dir, 'Medial_Cuneiform_Template.stl')
+    elif bone_type == 'metatarsal':
+        # Would need more specific handling for MT1-MT5
+        template_file = os.path.join(template_dir, 'Metatarsal1_Template.stl')
+    elif bone_type == 'tibia':
+        template_file = os.path.join(template_dir, 'Tibia_Template.stl')
+    elif bone_type == 'fibula':
+        template_file = os.path.join(template_dir, 'Fibula_Template.stl')
+    else:
+        raise ValueError(f"Unknown bone type: {bone_type}")
+    
+    if not os.path.exists(template_file):
+        raise FileNotFoundError(f"Template file not found: {template_file}")
+    
     # Load bone and template
     bone_points = load_bone_file(bone_file)
     template_points = load_stl(template_file)
     
-    # For tibiotalar and subtalar CS of talus, need secondary template
+    # Load secondary template if needed
     secondary_template = None
-    if bone_type == 'talus' and coord_sys in ['tibiotalar', 'subtalar']:
-        # Load Talus_Template2.stl as secondary template
-        template_dir = os.path.dirname(template_file)
-        secondary_template_file = os.path.join(template_dir, 'Talus_Template2.stl')
-        if os.path.exists(secondary_template_file):
-            secondary_template = load_stl(secondary_template_file)
+    if secondary_template_file and os.path.exists(secondary_template_file):
+        secondary_template = load_stl(secondary_template_file)
     
     # Flip right bones to left for processing
     if side == 'right':
@@ -127,21 +167,15 @@ def process_bone(bone_file, template_file, bone_type='talus', side='left',
 
 def main():
     """Main pipeline with hardcoded examples."""
-    # Configuration - MODIFY THESE FOR YOUR DATA
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    template_dir = os.path.join(os.path.dirname(script_dir), 'Template_Bones')
-    
     # Example configurations (hardcoded)
     examples = [
         {
             'bone_file': 'path/to/talus_left.stl',  # Replace with actual absolute path
-            'template_file': os.path.join(template_dir, 'Talus_Template.stl'),
             'bone_type': 'talus',
             'side': 'left'
         },
         {
             'bone_file': 'path/to/calcaneus_right.stl',  # Replace with actual absolute path
-            'template_file': os.path.join(template_dir, 'Calcaneus_Template.stl'),
             'bone_type': 'calcaneus',
             'side': 'right'
         },
