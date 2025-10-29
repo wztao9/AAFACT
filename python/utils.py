@@ -17,7 +17,7 @@ def center(points):
     return centered, centroid
 
 
-def reorient(aligned_points, coords_aligned, original_centroid, R, T, side='left'):
+def reorient(aligned_points, coords_aligned, original_centroid, R, T, side='left', sR=None):
     """Reorient aligned points and coordinates back to original orientation.
     
     Args:
@@ -27,6 +27,7 @@ def reorient(aligned_points, coords_aligned, original_centroid, R, T, side='left
         R: Rotation matrix from ICP
         T: Translation vector from ICP
         side: Laterality (left/right)
+        sR: Secondary rotation matrix (for TT/ST talus)
         
     Returns:
         points_final: Points in original orientation
@@ -34,6 +35,10 @@ def reorient(aligned_points, coords_aligned, original_centroid, R, T, side='left
     """
     # Combine points and coordinates
     combined = np.vstack([aligned_points, coords_aligned])
+    
+    # Apply inverse of secondary rotation if present
+    if sR is not None:
+        combined = (sR.T @ combined.T).T
     
     # Inverse transform
     R_inv = R.T

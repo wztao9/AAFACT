@@ -8,6 +8,7 @@ This is a minimal Python translation of the AAFACT (Automatic Anatomical Foot an
 - **No GUI**: Pure command-line processing
 - **Hardcoded configurations**: Pre-define bone types and lateralities
 - **Core pipeline**: ICP alignment → Coordinate system calculation → Output
+- **Multiple coordinate systems**: Support for different CS types (e.g., tibiotalar, subtalar for talus)
 
 ## Installation
 
@@ -33,12 +34,22 @@ python pipeline.py
 ```python
 from pipeline import process_bone
 
-# Process a single bone
+# Process a single bone with default coordinate system
 coords, coords_unit = process_bone(
     bone_file='path/to/talus.stl',
     template_file='../Template_Bones/Talus_Template.stl',
     bone_type='talus',
     side='left',
+    output_dir='output'
+)
+
+# Process talus with Tibiotalar coordinate system
+coords, coords_unit = process_bone(
+    bone_file='path/to/talus.stl',
+    template_file='../Template_Bones/Talus_Template.stl',
+    bone_type='talus',
+    side='left',
+    coord_sys='tibiotalar',  # Specify coordinate system type
     output_dir='output'
 )
 ```
@@ -53,7 +64,8 @@ examples = [
         'bone_file': 'data/subject01_talus_left.stl',
         'template_file': os.path.join(template_dir, 'Talus_Template.stl'),
         'bone_type': 'talus',
-        'side': 'left'
+        'side': 'left',
+        'coord_sys': 'tibiotalar'  # Optional: specify coordinate system type
     },
     # Add more bones...
 ]
@@ -61,14 +73,29 @@ examples = [
 
 ## Supported Bone Types
 
-- `talus`
-- `calcaneus`
+- `talus` (coordinate systems: default/talonavicular, tibiotalar, subtalar)
+- `calcaneus` (coordinate systems: default/calcaneocuboid, subtalar)
 - `navicular`
 - `cuboid`
 - `cuneiform`
 - `metatarsal`
 - `tibia`
 - `fibula`
+
+## Coordinate System Types
+
+For certain bones, multiple coordinate system options are available:
+
+### Talus
+- `'default'` or `'talonavicular'` - Talonavicular coordinate system (default)
+- `'tibiotalar'` - Tibiotalar coordinate system
+- `'subtalar'` - Subtalar coordinate system
+
+### Calcaneus
+- `'default'` or `'calcaneocuboid'` - Calcaneocuboid coordinate system (default)
+- `'subtalar'` - Subtalar coordinate system
+
+Other bones use `'default'` coordinate system only.
 
 ## Output
 

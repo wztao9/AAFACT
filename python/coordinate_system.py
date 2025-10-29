@@ -2,19 +2,25 @@
 import numpy as np
 
 
-def compute_coordinate_system(nodes, bone_type='talus', side='left'):
+def compute_coordinate_system(nodes, bone_type='talus', side='left', coord_sys='default'):
     """Compute anatomical coordinate system for aligned bone.
     
     Args:
         nodes: Nx3 aligned bone point cloud
         bone_type: Type of bone (talus, calcaneus, navicular, etc.)
         side: Laterality (left/right)
+        coord_sys: Coordinate system type (default, tibiotalar, subtalar, etc.)
         
     Returns:
         coords: 6x3 array of coordinate system points (origin + 3 axis endpoints)
     """
     # Remove zero rows
     nodes = nodes[~np.all(nodes == 0, axis=1)]
+    
+    # Special handling for TT CS (Tibiotalar) and ST CS (Subtalar) of talus
+    if bone_type == 'talus' and coord_sys in ['tibiotalar', 'subtalar']:
+        # Filter nodes with y < 10 for TT/ST coordinate systems
+        nodes = nodes[nodes[:, 1] < 10]
     
     # Determine number of sections based on bone type
     n_sections = {'talus': 3, 'calcaneus': 10, 'navicular': 5, 'cuboid': 5,

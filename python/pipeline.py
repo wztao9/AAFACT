@@ -7,18 +7,20 @@ from utils import center, reorient, normalize_coords
 from io_utils import load_bone_file, load_stl, save_coordinates
 
 
-def align_to_template(bone_points, template_points, max_iterations=200):
+def align_to_template(bone_points, template_points, max_iterations=200, secondary_template=None):
     """Align bone to template using ICP with multiple initial rotations.
     
     Args:
         bone_points: Nx3 bone point cloud
         template_points: Mx3 template point cloud
         max_iterations: Maximum ICP iterations
+        secondary_template: Optional secondary template for additional alignment (e.g., TT/ST talus)
         
     Returns:
         aligned_points: Aligned bone point cloud
         R: Best rotation matrix
         T: Best translation vector
+        sR: Secondary rotation (if secondary_template provided)
     """
     # Try multiple initial rotations
     rotations = [
@@ -48,10 +50,19 @@ def align_to_template(bone_points, template_points, max_iterations=200):
             best_T = T
             best_aligned = aligned
     
-    return best_aligned, best_R, best_T
+    # If secondary template provided (for TT/ST talus), do additional alignment
+    sR = None
+    if secondary_template is not None:
+        # Align secondary template to primary template
+        sR, _, _ = icp(secondary_template, template_points, max_iterations=25)
+        # Apply this rotation to the aligned points
+        best_aligned = (sR @ best_aligned.T).T
+    
+    return best_aligned, best_R, best_T, sR
 
 
-def process_bone(bone_file, template_file, bone_type='talus', side='left', output_dir='output'):
+def process_bone(bone_file, template_file, bone_type='talus', side='left', 
+                 coord_sys='default', output_dir='output'):
     """Process a single bone and compute anatomical coordinate system.
     
     Args:
@@ -59,6 +70,7 @@ def process_bone(bone_file, template_file, bone_type='talus', side='left', outpu
         template_file: Path to template bone file
         bone_type: Type of bone
         side: Laterality (left/right)
+        coord_sys: Coordinate system type (default, tibiotalar, subtalar, etc.)
         output_dir: Output directory for results
         
     Returns:
@@ -71,6 +83,15 @@ def process_bone(bone_file, template_file, bone_type='talus', side='left', outpu
     bone_points = load_bone_file(bone_file)
     template_points = load_stl(template_file)
     
+    # For tibiotalar and subtalar CS of talus, need secondary template
+    secondary_template = None
+    if bone_type == 'talus' and coord_sys in ['tibiotalar', 'subtalar']:
+        # Load Talus_Template2.stl as secondary template
+        template_dir = os.path.dirname(template_file)
+        secondary_template_file = os.path.join(template_dir, 'Talus_Template2.stl')
+        if os.path.exists(secondary_template_file):
+            secondary_template = load_stl(secondary_template_file)
+    
     # Flip right bones to left for processing
     if side == 'right':
         bone_points[:, 2] *= -1
@@ -80,16 +101,17 @@ def process_bone(bone_file, template_file, bone_type='talus', side='left', outpu
     
     # Align to template
     print("  Aligning to template...")
-    aligned_points, R, T = align_to_template(bone_centered, template_points)
+    aligned_points, R, T, sR = align_to_template(bone_centered, template_points, 
+                                                   secondary_template=secondary_template)
     
     # Compute coordinate system
     print("  Computing coordinate system...")
-    coords_aligned = compute_coordinate_system(aligned_points, bone_type, side)
+    coords_aligned = compute_coordinate_system(aligned_points, bone_type, side, coord_sys)
     
     # Reorient back to original space
     print("  Reorienting to original space...")
     points_final, coords_final = reorient(aligned_points, coords_aligned, 
-                                          original_centroid, R, T, side)
+                                          original_centroid, R, T, side, sR)
     
     # Normalize coordinates
     coords_unit = normalize_coords(coords_final)
