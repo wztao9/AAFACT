@@ -6,8 +6,10 @@ from pipeline import process_bone
 print("Example 1: Processing talus bone")
 print("-" * 50)
 
-bone_file = 'example_data/talus_left.stl'
-template_file = '../Template_Bones/Talus_Template.stl'
+# Use absolute paths based on script location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+bone_file = os.path.join(script_dir, 'example_data', 'talus_left.stl')
+template_file = os.path.join(os.path.dirname(script_dir), 'Template_Bones', 'Talus_Template.stl')
 
 if os.path.exists(bone_file) and os.path.exists(template_file):
     try:
@@ -43,8 +45,10 @@ bones_to_process = [
     ('navicular', 'left', 'Navicular_Template.stl'),
 ]
 
-template_dir = '../Template_Bones'
-data_dir = 'example_data'  # Replace with your data directory
+# Use absolute paths based on script location
+script_dir = os.path.dirname(os.path.abspath(__file__))
+template_dir = os.path.join(os.path.dirname(script_dir), 'Template_Bones')
+data_dir = 'example_data'  # Replace with your data directory (or use absolute path)
 output_dir = 'batch_output'
 
 for bone_type, side, template_name in bones_to_process:

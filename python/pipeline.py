@@ -106,18 +106,19 @@ def process_bone(bone_file, template_file, bone_type='talus', side='left', outpu
 def main():
     """Main pipeline with hardcoded examples."""
     # Configuration - MODIFY THESE FOR YOUR DATA
-    template_dir = '../Template_Bones'
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    template_dir = os.path.join(os.path.dirname(script_dir), 'Template_Bones')
     
     # Example configurations (hardcoded)
     examples = [
         {
-            'bone_file': 'path/to/talus_left.stl',
+            'bone_file': 'path/to/talus_left.stl',  # Replace with actual absolute path
             'template_file': os.path.join(template_dir, 'Talus_Template.stl'),
             'bone_type': 'talus',
             'side': 'left'
         },
         {
-            'bone_file': 'path/to/calcaneus_right.stl',
+            'bone_file': 'path/to/calcaneus_right.stl',  # Replace with actual absolute path
             'template_file': os.path.join(template_dir, 'Calcaneus_Template.stl'),
             'bone_type': 'calcaneus',
             'side': 'right'
