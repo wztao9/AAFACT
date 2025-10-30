@@ -63,7 +63,7 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
 
 
 def process_bone(bone_file, bone_type='talus', side='left', 
-                 coord_sys='default', template_dir=None, output_dir='output'):
+                 coord_sys='default', joint_origin='center', template_dir=None, output_dir='output'):
     """Process a single bone and compute anatomical coordinate system.
     
     Args:
@@ -71,12 +71,14 @@ def process_bone(bone_file, bone_type='talus', side='left',
         bone_type: Type of bone
         side: Laterality (left/right)
         coord_sys: Coordinate system type (default, tibiotalar, subtalar, etc.)
+        joint_origin: Origin type ('center', 'tibiotalar_surface', 'talonavicular_surface', etc.)
         template_dir: Directory containing template files (default: ../Template_Bones relative to script)
         output_dir: Output directory for results
         
     Returns:
         coords_original: Coordinate system in original space
         coords_unit: Unit coordinate system
+        coords_aligned_unit: Aligned coordinate system
     """
     print(f"Processing {bone_type} ({side})...")
     
@@ -124,13 +126,13 @@ def process_bone(bone_file, bone_type='talus', side='left',
         raise FileNotFoundError(f"Template file not found: {template_file}")
     
     # Load bone and template
-    bone_points = load_bone_file(bone_file)
-    template_points = load_stl(template_file)
+    bone_points, bone_faces = load_bone_file(bone_file)
+    template_points, template_faces = load_stl(template_file)
     
     # Load secondary template if needed
     secondary_template = None
     if secondary_template_file and os.path.exists(secondary_template_file):
-        secondary_template = load_stl(secondary_template_file)
+        secondary_template, _ = load_stl(secondary_template_file)
     
     # Flip right bones to left for processing
     if side == 'right':
@@ -148,6 +150,14 @@ def process_bone(bone_file, bone_type='talus', side='left',
     print("  Computing coordinate system...")
     coords_aligned = compute_coordinate_system(aligned_points, bone_type, side, coord_sys)
     
+    # Apply joint origin if specified
+    if joint_origin != 'center':
+        print(f"  Computing joint origin: {joint_origin}...")
+        from joint_origin import compute_joint_origin
+        joint_origin_point, coords_aligned = compute_joint_origin(
+            coords_aligned, aligned_points, bone_faces, bone_type, joint_origin, side
+        )
+    
     # Normalize aligned coordinates (at 0,0,0)
     coords_aligned_unit = normalize_coords(coords_aligned)
     
@@ -163,8 +173,12 @@ def process_bone(bone_file, bone_type='talus', side='left',
     os.makedirs(output_dir, exist_ok=True)
     subject_name = os.path.splitext(os.path.basename(bone_file))[0]
     output_file = os.path.join(output_dir, f"{bone_type}_{side}_coords.csv")
+    
+    # Format joint type for display
+    joint_type_display = joint_origin.replace('_', ' ').title() if joint_origin != 'center' else 'Center'
+    
     save_coordinates(output_file, coords_final, coords_unit, coords_aligned_unit, 
-                    bone_type, side, subject_name)
+                    bone_type, side, subject_name, joint_type_display)
     print(f"  Saved to {output_file}")
     
     return coords_final, coords_unit, coords_aligned_unit
