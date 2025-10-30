@@ -148,21 +148,26 @@ def process_bone(bone_file, bone_type='talus', side='left',
     print("  Computing coordinate system...")
     coords_aligned = compute_coordinate_system(aligned_points, bone_type, side, coord_sys)
     
+    # Normalize aligned coordinates (at 0,0,0)
+    coords_aligned_unit = normalize_coords(coords_aligned)
+    
     # Reorient back to original space
     print("  Reorienting to original space...")
     points_final, coords_final = reorient(aligned_points, coords_aligned, 
                                           original_centroid, R, T, side, sR)
     
-    # Normalize coordinates
+    # Normalize coordinates in original orientation
     coords_unit = normalize_coords(coords_final)
     
     # Save results
     os.makedirs(output_dir, exist_ok=True)
+    subject_name = os.path.splitext(os.path.basename(bone_file))[0]
     output_file = os.path.join(output_dir, f"{bone_type}_{side}_coords.csv")
-    save_coordinates(output_file, coords_final, bone_type, side)
+    save_coordinates(output_file, coords_final, coords_unit, coords_aligned_unit, 
+                    bone_type, side, subject_name)
     print(f"  Saved to {output_file}")
     
-    return coords_final, coords_unit
+    return coords_final, coords_unit, coords_aligned_unit
 
 
 def main():

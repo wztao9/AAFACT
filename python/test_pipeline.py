@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from icp import icp, point_to_point
 from coordinate_system import compute_coordinate_system
 from utils import center, reorient, normalize_coords
+from pipeline import process_bone
 
 
 def test_icp():
@@ -164,6 +165,134 @@ def test_normalize_coords():
         return False
 
 
+def test_matlab_validation_template2_to_template1():
+    """Validate Python results against MATLAB for Template2->Template with Tibiotalar CS.
+    
+    MATLAB results for Talus_Template2.stl as input with Talus_Template.stl as template,
+    Tibiotalar CS, Center origin, Left side:
+    
+    Coordinate System at (0,0,0):
+    Center Origin: 0, 0, 0
+    AP Axis: -0.078247832, 0.993714396, 0.08005608
+    SI Axis: -0.058819152, -0.08476412, 0.994663436
+    ML Axis: 0.995197259, 0.073121427, 0.065082047
+    """
+    print("MATLAB Validation 1: Template2 → Template (Tibiotalar CS)...")
+    
+    # MATLAB expected results (normalized coordinates at origin)
+    matlab_AP = np.array([-0.078247832, 0.993714396, 0.08005608])
+    matlab_SI = np.array([-0.058819152, -0.08476412, 0.994663436])
+    matlab_ML = np.array([0.995197259, 0.073121427, 0.065082047])
+    
+    # File paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    bone_file = os.path.join(os.path.dirname(script_dir), 'Template_Bones', 'Talus_Template2.stl')
+    
+    if not os.path.exists(bone_file):
+        print("  ⚠ Template files not found, skipping validation")
+        return True  # Don't fail if templates not available
+    
+    try:
+        coords_final, coords_unit, coords_aligned_unit = process_bone(
+            bone_file=bone_file,
+            bone_type='talus',
+            side='left',
+            coord_sys='tibiotalar',
+            output_dir='/tmp/test_output'
+        )
+        
+        # Extract unit vectors from aligned coordinates (at 0,0,0)
+        python_AP = coords_aligned_unit[1] - coords_aligned_unit[0]
+        python_SI = coords_aligned_unit[3] - coords_aligned_unit[2]
+        python_ML = coords_aligned_unit[5] - coords_aligned_unit[4]
+        
+        # Calculate differences
+        diff_AP = np.linalg.norm(python_AP - matlab_AP)
+        diff_SI = np.linalg.norm(python_SI - matlab_SI)
+        diff_ML = np.linalg.norm(python_ML - matlab_ML)
+        
+        print(f"  AP diff: {diff_AP:.6f}, SI diff: {diff_SI:.6f}, ML diff: {diff_ML:.6f}")
+        
+        # Check if results match (tolerance for numerical precision)
+        tolerance = 0.015
+        passed = (diff_AP < tolerance and diff_SI < tolerance and diff_ML < tolerance)
+        
+        if passed:
+            print("  ✓ MATLAB validation 1 passed")
+        else:
+            print("  ✗ MATLAB validation 1 failed")
+        
+        return passed
+        
+    except Exception as e:
+        print(f"  ✗ MATLAB validation 1 failed with exception: {e}")
+        return False
+
+
+def test_matlab_validation_template1_to_template2():
+    """Validate Python results against MATLAB for Template->Template2 with Talonavicular CS.
+    
+    MATLAB results for Talus_Template.stl as input with Talus_Template2.stl as template,
+    Talonavicular CS, Center origin, Left side:
+    
+    Coordinate System at (0,0,0):
+    Center Origin: 0, 0, 0
+    AP Axis: -0.018227331, 0.998923153, -0.042664962
+    SI Axis: -0.130349854, 0.039933694, 0.990663523
+    ML Axis: 0.991300499, 0.023618524, 0.129481602
+    """
+    print("MATLAB Validation 2: Template → Template2 (Talonavicular CS)...")
+    
+    # MATLAB expected results (normalized coordinates at origin)
+    matlab_AP = np.array([-0.018227331, 0.998923153, -0.042664962])
+    matlab_SI = np.array([-0.130349854, 0.039933694, 0.990663523])
+    matlab_ML = np.array([0.991300499, 0.023618524, 0.129481602])
+    
+    # File paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    bone_file = os.path.join(os.path.dirname(script_dir), 'Template_Bones', 'Talus_Template.stl')
+    
+    if not os.path.exists(bone_file):
+        print("  ⚠ Template files not found, skipping validation")
+        return True  # Don't fail if templates not available
+    
+    try:
+        coords_final, coords_unit, coords_aligned_unit = process_bone(
+            bone_file=bone_file,
+            bone_type='talus',
+            side='left',
+            coord_sys='default',  # Talonavicular CS (default)
+            output_dir='/tmp/test_output'
+        )
+        
+        # Extract unit vectors from aligned coordinates (at 0,0,0)
+        python_AP = coords_aligned_unit[1] - coords_aligned_unit[0]
+        python_SI = coords_aligned_unit[3] - coords_aligned_unit[2]
+        python_ML = coords_aligned_unit[5] - coords_aligned_unit[4]
+        
+        # Calculate differences
+        diff_AP = np.linalg.norm(python_AP - matlab_AP)
+        diff_SI = np.linalg.norm(python_SI - matlab_SI)
+        diff_ML = np.linalg.norm(python_ML - matlab_ML)
+        
+        print(f"  AP diff: {diff_AP:.6f}, SI diff: {diff_SI:.6f}, ML diff: {diff_ML:.6f}")
+        
+        # Check if results match (tolerance for numerical precision)
+        tolerance = 0.015
+        passed = (diff_AP < tolerance and diff_SI < tolerance and diff_ML < tolerance)
+        
+        if passed:
+            print("  ✓ MATLAB validation 2 passed")
+        else:
+            print("  ✗ MATLAB validation 2 failed")
+        
+        return passed
+        
+    except Exception as e:
+        print(f"  ✗ MATLAB validation 2 failed with exception: {e}")
+        return False
+
+
 def main():
     """Run all tests."""
     print("=" * 60)
@@ -176,7 +305,9 @@ def main():
         test_icp,
         test_coordinate_system,
         test_center,
-        test_normalize_coords
+        test_normalize_coords,
+        test_matlab_validation_template2_to_template1,
+        test_matlab_validation_template1_to_template2
     ]
     
     results = []

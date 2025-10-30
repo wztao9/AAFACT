@@ -96,12 +96,33 @@ Other bones use `'default'` coordinate system only.
 
 ## Output
 
-CSV files containing coordinate system information:
-- AP (Anterior-Posterior) axis
-- SI (Superior-Inferior) axis
-- ML (Medial-Lateral) axis
+CSV files matching MATLAB format with two coordinate systems:
+1. **Coordinate System at Original Orientation** - Coordinates in the original bone orientation
+2. **Coordinate System at (0,0,0)** - Normalized coordinates in the aligned template space
 
-Each axis is defined by origin and endpoint coordinates.
+Each coordinate system includes:
+- Center Origin
+- AP (Anterior-Posterior) axis unit vector
+- SI (Superior-Inferior) axis unit vector
+- ML (Medial-Lateral) axis unit vector
+
+Example CSV format:
+```csv
+Subject,Talus_Template2
+Bone Model,Talus
+Side,Left
+
+Coordinate System at Original Orientation,X,Y,Z
+Center Origin,0.000000000,0.000000000,0.000000000
+AP Axis,-0.069279525,0.994574933,0.077595487
+SI Axis,-0.064409896,-0.082079562,0.994542259
+ML Axis,0.995515802,0.063903504,0.069746899
+Coordinate System at (0,0,0),X,Y,Z
+Center Origin,0.000000000,0.000000000,0.000000000
+AP Axis,-0.084944776,0.992540473,0.087451669
+SI Axis,-0.060725157,-0.092762759,0.993834758
+ML Axis,0.994533479,0.079110555,0.068151888
+```
 
 ## Pipeline Overview
 

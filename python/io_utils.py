@@ -74,22 +74,39 @@ def load_bone_file(filepath):
         raise ValueError(f"Unsupported file format: {filepath}")
 
 
-def save_coordinates(filepath, coords, bone_name, side):
-    """Save coordinate system to CSV file.
+def save_coordinates(filepath, coords_final, coords_unit, coords_aligned_unit, 
+                    bone_name, side, subject_name=None):
+    """Save coordinate system to CSV file matching MATLAB format.
     
     Args:
         filepath: Output file path
-        coords: 6x3 coordinate system
+        coords_final: 6x3 coordinate system in original orientation
+        coords_unit: 6x3 normalized coordinates in original orientation
+        coords_aligned_unit: 6x3 normalized coordinates at (0,0,0)
         bone_name: Name of bone
         side: Laterality (left/right)
+        subject_name: Subject/file name (optional)
     """
+    if subject_name is None:
+        subject_name = os.path.splitext(os.path.basename(filepath))[0]
+    
     with open(filepath, 'w') as f:
-        f.write(f"Bone,{bone_name}\n")
-        f.write(f"Side,{side}\n")
-        f.write("Coordinate,X,Y,Z\n")
-        f.write(f"AP_origin,{coords[0,0]:.6f},{coords[0,1]:.6f},{coords[0,2]:.6f}\n")
-        f.write(f"AP_end,{coords[1,0]:.6f},{coords[1,1]:.6f},{coords[1,2]:.6f}\n")
-        f.write(f"SI_origin,{coords[2,0]:.6f},{coords[2,1]:.6f},{coords[2,2]:.6f}\n")
-        f.write(f"SI_end,{coords[3,0]:.6f},{coords[3,1]:.6f},{coords[3,2]:.6f}\n")
-        f.write(f"ML_origin,{coords[4,0]:.6f},{coords[4,1]:.6f},{coords[4,2]:.6f}\n")
-        f.write(f"ML_end,{coords[5,0]:.6f},{coords[5,1]:.6f},{coords[5,2]:.6f}\n")
+        # Header
+        f.write(f"Subject,{subject_name}\n")
+        f.write(f"Bone Model,{bone_name.capitalize()}\n")
+        f.write(f"Side,{side.capitalize()}\n")
+        f.write("\n")
+        
+        # Coordinate System at Original Orientation
+        f.write("Coordinate System at Original Orientation,X,Y,Z\n")
+        f.write(f"Center Origin,{coords_unit[0,0]:.9f},{coords_unit[0,1]:.9f},{coords_unit[0,2]:.9f}\n")
+        f.write(f"AP Axis,{coords_unit[1,0]:.9f},{coords_unit[1,1]:.9f},{coords_unit[1,2]:.9f}\n")
+        f.write(f"SI Axis,{coords_unit[3,0]:.9f},{coords_unit[3,1]:.9f},{coords_unit[3,2]:.9f}\n")
+        f.write(f"ML Axis,{coords_unit[5,0]:.9f},{coords_unit[5,1]:.9f},{coords_unit[5,2]:.9f}\n")
+        
+        # Coordinate System at (0,0,0)
+        f.write("Coordinate System at (0,0,0),X,Y,Z\n")
+        f.write(f"Center Origin,{coords_aligned_unit[0,0]:.9f},{coords_aligned_unit[0,1]:.9f},{coords_aligned_unit[0,2]:.9f}\n")
+        f.write(f"AP Axis,{coords_aligned_unit[1,0]:.9f},{coords_aligned_unit[1,1]:.9f},{coords_aligned_unit[1,2]:.9f}\n")
+        f.write(f"SI Axis,{coords_aligned_unit[3,0]:.9f},{coords_aligned_unit[3,1]:.9f},{coords_aligned_unit[3,2]:.9f}\n")
+        f.write(f"ML Axis,{coords_aligned_unit[5,0]:.9f},{coords_aligned_unit[5,1]:.9f},{coords_aligned_unit[5,2]:.9f}\n")
