@@ -149,17 +149,23 @@ ML Axis,0.994533479,0.079110555,0.068151888
 
 The pipeline automatically adapts to different bone sizes using **relative measurements**:
 
-1. **Adaptive sectioning**: Divides each bone into regions based on its own dimensions
+1. **ICP size scaling**: Before alignment, bones are temporarily scaled to match template size
+   - Calculates size ratio between template and bone along the primary axis
+   - Scales bone UP if smaller than template (improves ICP accuracy)
+   - Scales back DOWN after alignment to preserve original proportions
+   - Uses Y-axis for most bones, X-axis for navicular, Z-axis for cuneiforms
+
+2. **Adaptive sectioning**: Divides each bone into regions based on its own dimensions
    - Calculates bone range in each axis (max - min)
    - Creates sections as fractions of the bone's size (e.g., 1/3 for talus, 1/10 for calcaneus)
    - Extracts representative points from these relative regions
 
-2. **Size-independent features**: 
+3. **Size-independent features**: 
    - Uses proportional regions rather than absolute distances
    - Coordinate axes are normalized to unit length
    - Works with both pediatric and adult bone sizes
 
-3. **Special bone handling**:
+4. **Special bone handling**:
    - **Tibia**: Removes distal 14mm (plafond) and processes only proximal 100mm
    - **Talus (TT/ST CS)**: Filters superior portion (y < 10mm) for tibiotalar/subtalar systems
    - Note: These hardcoded values may need adjustment for significantly different scales

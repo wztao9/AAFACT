@@ -7,7 +7,7 @@ from utils import center, reorient, normalize_coords
 from io_utils import load_bone_file, load_stl, save_coordinates
 
 
-def align_to_template(bone_points, template_points, max_iterations=200, secondary_template=None):
+def align_to_template(bone_points, template_points, max_iterations=200, secondary_template=None, bone_type='talus'):
     """Align bone to template using ICP with multiple initial rotations.
     
     Args:
@@ -15,6 +15,7 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
         template_points: Mx3 template point cloud
         max_iterations: Maximum ICP iterations
         secondary_template: Optional secondary template for additional alignment (e.g., TT/ST talus)
+        bone_type: Type of bone (for determining scaling axis)
         
     Returns:
         aligned_points: Aligned bone point cloud
@@ -22,6 +23,26 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
         T: Best translation vector
         sR: Secondary rotation (if secondary_template provided)
     """
+    # Determine the axis to use for size comparison (matching MATLAB's 'a' variable)
+    # Default is Y axis (index 1), but navicular and cuneiforms use different axes
+    if bone_type in ['navicular']:
+        axis = 0  # X axis
+    elif bone_type in ['cuneiform']:
+        axis = 2  # Z axis
+    else:
+        axis = 1  # Y axis (default for most bones)
+    
+    # Calculate size multiplier to scale bone to template size for better ICP accuracy
+    # MATLAB: multiplier = (max(nodes_template(:,a)) - min(nodes_template(:,a)))/(max(nodes(:,b)) - min(nodes(:,b)))
+    template_range = template_points[:, axis].max() - template_points[:, axis].min()
+    bone_range = bone_points[:, axis].max() - bone_points[:, axis].min()
+    multiplier = template_range / bone_range if bone_range > 0 else 1.0
+    
+    # Scale bone if it's smaller than template (multiplier > 1)
+    scaled_points = bone_points.copy()
+    if multiplier > 1:
+        scaled_points = bone_points * multiplier
+    
     # Try multiple initial rotations
     rotations = [
         np.eye(3),
@@ -35,7 +56,7 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
     best_R, best_T, best_aligned = None, None, None
     
     for rot in rotations:
-        rotated = (rot @ bone_points.T).T
+        rotated = (rot @ scaled_points.T).T
         R, T, aligned = icp(template_points, rotated, max_iterations=max_iterations)
         
         # Compute error
@@ -58,6 +79,10 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
         sR, _, _ = icp(secondary_template, template_points, max_iterations=25)
         # Apply this rotation to the aligned points
         best_aligned = (sR @ best_aligned.T).T
+    
+    # Undo the scaling (scale back down to original size)
+    if multiplier > 1:
+        best_aligned = best_aligned / multiplier
     
     return best_aligned, best_R, best_T, sR
 
@@ -144,7 +169,8 @@ def process_bone(bone_file, bone_type='talus', side='left',
     # Align to template
     print("  Aligning to template...")
     aligned_points, R, T, sR = align_to_template(bone_centered, template_points, 
-                                                   secondary_template=secondary_template)
+                                                   secondary_template=secondary_template,
+                                                   bone_type=bone_type)
     
     # Compute coordinate system
     print("  Computing coordinate system...")
