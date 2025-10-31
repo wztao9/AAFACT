@@ -15,12 +15,21 @@ def compute_coordinate_system(nodes, bone_type='talus', side='left', coord_sys='
         coords: 6x3 array of coordinate system points (origin + 3 axis endpoints)
     """
     # Remove zero rows
-    nodes = nodes[~np.all(nodes == 0, axis=1)]
+    nodes_original = nodes[~np.all(nodes == 0, axis=1)]
+    nodes = nodes_original.copy()
     
     # Special handling for TT CS (Tibiotalar) and ST CS (Subtalar) of talus
     if bone_type == 'talus' and coord_sys in ['tibiotalar', 'subtalar']:
         # Filter nodes with y < 10 for TT/ST coordinate systems
+        # Note: This is a hardcoded value from MATLAB that may not scale well
         nodes = nodes[nodes[:, 1] < 10]
+    
+    # Special handling for tibia - remove tibial plafond and shorten
+    if bone_type == 'tibia':
+        z_min = nodes[:, 2].min()
+        cutting_plane = z_min + 14  # Removes tibial plafond
+        cutting_plane2 = z_min + 100  # Shortens the tibia
+        nodes = nodes[(nodes[:, 2] > cutting_plane) & (nodes[:, 2] < cutting_plane2)]
     
     # Determine number of sections based on bone type
     n_sections = {'talus': 3, 'calcaneus': 10, 'navicular': 5, 'cuboid': 5,
