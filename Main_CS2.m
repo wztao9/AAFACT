@@ -162,20 +162,20 @@ for b = 1:length(bone_list)
             
             % Write to Excel
             try
-                % Prepare data matching Main_CS.m format
-                A = ["Subject"; "Bone Model"; "Side"];
-                B = [name_only; bone_names(bone_indx); "Left"];
-                C = ["Coordinate System at Original Orientation"
-                    "Center Origin"
-                    "AP Axis"
-                    "SI Axis"
-                    "ML Axis"
-                    "Coordinate System at (0,0,0)"
-                    "Center Origin"
-                    "AP Axis"
-                    "SI Axis"
-                    "ML Axis"];
-                D = ["X" "Y" "Z"];
+                % Prepare data matching Main_CS.m format (use cell arrays)
+                A = {'Subject'; 'Bone Model'; 'Side'};
+                B = {name_only; bone_names{bone_indx}; 'Left'};
+                C = {'Coordinate System at Original Orientation'
+                    'Center Origin'
+                    'AP Axis'
+                    'SI Axis'
+                    'ML Axis'
+                    'Coordinate System at (0,0,0)'
+                    'Center Origin'
+                    'AP Axis'
+                    'SI Axis'
+                    'ML Axis'};
+                D = {'X' 'Y' 'Z'};
                 
                 % Create sheet name (limit to 31 chars)
                 sheet_name = name_only;
@@ -184,11 +184,11 @@ for b = 1:length(bone_list)
                 end
                 
                 % Write data
-                writematrix(A, output_path, 'Sheet', sheet_name);
+                writecell(A, output_path, 'Sheet', sheet_name, 'Range', 'A1');
                 writecell(B, output_path, 'Sheet', sheet_name, 'Range', 'B1');
-                writematrix(C, output_path, 'Sheet', sheet_name, 'Range', 'A5');
-                writematrix(D, output_path, 'Sheet', sheet_name, 'Range', 'B5');
-                writematrix(D, output_path, 'Sheet', sheet_name, 'Range', 'B10');
+                writecell(C, output_path, 'Sheet', sheet_name, 'Range', 'A5');
+                writecell(D, output_path, 'Sheet', sheet_name, 'Range', 'B5');
+                writecell(D, output_path, 'Sheet', sheet_name, 'Range', 'B10');
                 writematrix(coords_final_unit(1,:), output_path, 'Sheet', sheet_name, 'Range', 'B6');
                 writematrix(coords_final_unit(2,:), output_path, 'Sheet', sheet_name, 'Range', 'B7');
                 writematrix(coords_final_unit(4,:), output_path, 'Sheet', sheet_name, 'Range', 'B8');
