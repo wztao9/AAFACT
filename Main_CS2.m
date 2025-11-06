@@ -103,7 +103,9 @@ for b = 1:length(bone_list)
         
         % Load the bone model
         try
-            [nodes_original, conlist_original] = LoadDataFile(file_path);
+            TR = stlread(file_path);
+            nodes_original = TR.Points;
+            conlist_original = TR.ConnectivityList;
         catch
             fprintf('    ERROR: Could not load file, skipping.\n');
             continue;
