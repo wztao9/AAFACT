@@ -22,14 +22,16 @@ def compute_coordinate_system(nodes, bone_type='talus', side='left', coord_sys='
     if bone_type == 'talus' and coord_sys in ['tibiotalar', 'subtalar']:
         # Filter nodes with y < 10 for TT/ST coordinate systems
         # Note: This is a hardcoded value from MATLAB that may not scale well
-        nodes = nodes[nodes[:, 1] < 10]
+        mask = nodes[:, 1] < 10
+        nodes = nodes[mask]
     
     # Special handling for tibia - remove tibial plafond and shorten
     if bone_type == 'tibia':
         z_min = nodes[:, 2].min()
         cutting_plane = z_min + 14  # Removes tibial plafond
         cutting_plane2 = z_min + 100  # Shortens the tibia
-        nodes = nodes[(nodes[:, 2] > cutting_plane) & (nodes[:, 2] < cutting_plane2)]
+        mask = (nodes[:, 2] > cutting_plane) & (nodes[:, 2] < cutting_plane2)
+        nodes = nodes[mask]
     
     # Determine number of sections based on bone type
     n_sections = {'talus': 3, 'calcaneus': 10, 'navicular': 5, 'cuboid': 5,
@@ -45,27 +47,37 @@ def compute_coordinate_system(nodes, bone_type='talus', side='left', coord_sys='
     # Extract regions of interest
     if bone_type in ['navicular']:
         # Use X axis as primary
-        pos_roi = nodes[nodes[:, 0] >= maxs[0] - nth[0]]
-        neg_roi = nodes[nodes[:, 0] <= mins[0] + nth[0]]
-        sup_roi = nodes[nodes[:, 2] >= maxs[2] - nth[2]]
+        pos_mask = nodes[:, 0] >= maxs[0] - nth[0]
+        neg_mask = nodes[:, 0] <= mins[0] + nth[0]
+        sup_mask = nodes[:, 2] >= maxs[2] - nth[2]
+        pos_roi = nodes[pos_mask]
+        neg_roi = nodes[neg_mask]
+        sup_roi = nodes[sup_mask]
         first_point = pos_roi.mean(axis=0)
         second_point = neg_roi.mean(axis=0)
         third_point = sup_roi.mean(axis=0)
     elif bone_type in ['tibia', 'fibula']:
         # Use Z axis as primary
-        pos_roi = nodes[nodes[:, 2] >= maxs[2] - nth[2]]
-        neg_roi = nodes[nodes[:, 2] <= mins[2] + nth[2]]
-        neg_x_roi = nodes[nodes[:, 0] <= mins[0] + nth[0]]
+        pos_mask = nodes[:, 2] >= maxs[2] - nth[2]
+        neg_mask = nodes[:, 2] <= mins[2] + nth[2]
+        neg_x_mask = nodes[:, 0] <= mins[0] + nth[0]
+        pos_roi = nodes[pos_mask]
+        neg_roi = nodes[neg_mask]
+        neg_x_roi = nodes[neg_x_mask]
         first_point = pos_roi.mean(axis=0)
         second_point = neg_roi.mean(axis=0)
         third_point = neg_x_roi.mean(axis=0)
         if second_point[2] > third_point[2]:
+            third_point = third_point.copy()
             third_point[2] = 0
     else:
         # Use Y axis as primary (most bones)
-        pos_roi = nodes[nodes[:, 1] >= maxs[1] - nth[1]]
-        neg_roi = nodes[nodes[:, 1] <= mins[1] + nth[1]]
-        sup_roi = nodes[nodes[:, 2] >= maxs[2] - nth[2]]
+        pos_mask = nodes[:, 1] >= maxs[1] - nth[1]
+        neg_mask = nodes[:, 1] <= mins[1] + nth[1]
+        sup_mask = nodes[:, 2] >= maxs[2] - nth[2]
+        pos_roi = nodes[pos_mask]
+        neg_roi = nodes[neg_mask]
+        sup_roi = nodes[sup_mask]
         first_point = pos_roi.mean(axis=0)
         second_point = neg_roi.mean(axis=0)
         third_point = sup_roi.mean(axis=0)
