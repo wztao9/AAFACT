@@ -374,7 +374,6 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
     """
     import glob
     import pandas as pd
-    from io_utils import save_coordinate_system
     
     print("=" * 80)
     print("MATLAB vs Python Validation")
@@ -476,21 +475,23 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
                 bone_type=bone_type,
                 side='left',
                 coord_sys=coord_sys_python,
-                joint_origin='center'
+                joint_origin='center',
+                output_dir=python_output_dir
             )
             
             # Extract Python results (original orientation)
-            python_origin = coords_final['origin']
-            python_ap = coords_final['ap_axis']
-            python_si = coords_final['si_axis']
-            python_ml = coords_final['ml_axis']
+            # coords_final format: [origin, AP_end, origin, SI_end, origin, ML_end]
+            python_origin = coords_final[0, :]
+            python_ap = coords_final[1, :] - coords_final[0, :]  # AP axis vector
+            python_si = coords_final[3, :] - coords_final[2, :]  # SI axis vector
+            python_ml = coords_final[5, :] - coords_final[4, :]  # ML axis vector
             
-            # Save Python output
-            os.makedirs(os.path.join(python_output_dir, parent_dir), exist_ok=True)
-            output_file = os.path.join(python_output_dir, parent_dir, 
-                                      f"{seg_name}_{cs_name}_Center.csv")
-            save_coordinate_system(output_file, seg_name, bone_type, 'left',
-                                  coords_final, coords_unit, coords_aligned_unit, 'center')
+            # Normalize to unit vectors for angle comparison
+            python_ap = python_ap / np.linalg.norm(python_ap)
+            python_si = python_si / np.linalg.norm(python_si)
+            python_ml = python_ml / np.linalg.norm(python_ml)
+            
+            # Note: Python output already saved by process_bone to python_output_dir
             
             # Compute errors
             # 1. Origin distance error
