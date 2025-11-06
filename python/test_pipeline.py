@@ -360,5 +360,235 @@ def main():
         return 1
 
 
+def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_dir):
+    """
+    Compare Python and MATLAB results for all bone segmentations.
+    
+    Args:
+        input_dir: Directory containing input segmentations organized by anatomy
+        matlab_output_dir: Directory containing MATLAB output xlsx files
+        python_output_dir: Directory where Python output CSVs will be saved
+    
+    Returns:
+        Dictionary with comparison statistics
+    """
+    import glob
+    import pandas as pd
+    from io_utils import save_coordinate_system
+    
+    print("=" * 80)
+    print("MATLAB vs Python Validation")
+    print("=" * 80)
+    
+    # Bone type mapping for process_bone
+    bone_map = {
+        'talus': 'talus',
+        'calcaneus': 'calcaneus',
+        'navicular': 'navicular',
+        'cuboid': 'cuboid',
+        'medial_cuneiform': 'medial_cuneiform',
+        'intermediate_cuneiform': 'intermediate_cuneiform',
+        'lateral_cuneiform': 'lateral_cuneiform',
+        'first_metatarsal': 'first_metatarsal',
+        'second_metatarsal': 'second_metatarsal',
+        'third_metatarsal': 'third_metatarsal',
+        'fourth_metatarsal': 'fourth_metatarsal',
+        'fifth_metatarsal': 'fifth_metatarsal',
+        'tibia': 'tibia',
+        'fibula': 'fibula'
+    }
+    
+    # Coordinate system name mapping
+    cs_map = {
+        'Talonavicular': 'talonavicular',
+        'Tibiotalar': 'tibiotalar',
+        'Subtalar': 'subtalar',
+        'Calcaneocuboid': 'calcaneocuboid',
+        'Vertical': 'vertical',
+        'Radial': 'radial'
+    }
+    
+    # Storage for errors
+    origin_errors = []
+    angle_errors = []
+    cases = []
+    
+    # Find all MATLAB output files
+    matlab_files = glob.glob(os.path.join(matlab_output_dir, '**', '*.xlsx'), recursive=True)
+    
+    print(f"\nFound {len(matlab_files)} MATLAB result files")
+    print()
+    
+    for matlab_file in sorted(matlab_files):
+        # Parse filename: {seg_name}_{CS}_Center.xlsx
+        basename = os.path.basename(matlab_file)
+        if not basename.endswith('_Center.xlsx'):
+            continue
+        
+        parts = basename[:-len('_Center.xlsx')].split('_')
+        if len(parts) < 2:
+            continue
+        
+        cs_name = parts[-1]
+        seg_name = '_'.join(parts[:-1])
+        
+        # Determine bone type from parent directory
+        parent_dir = os.path.basename(os.path.dirname(matlab_file))
+        if parent_dir not in bone_map:
+            continue
+        
+        bone_type = bone_map[parent_dir]
+        coord_sys_python = cs_map.get(cs_name, 'default')
+        
+        # Find input file
+        input_file = os.path.join(input_dir, parent_dir, seg_name + '.stl')
+        if not os.path.exists(input_file):
+            print(f"⚠ Input file not found: {input_file}")
+            continue
+        
+        print(f"Processing: {seg_name} ({bone_type}, {cs_name} CS)")
+        
+        try:
+            # Read MATLAB results
+            df_matlab = pd.read_excel(matlab_file, header=None)
+            
+            # Extract "Coordinate System at Original Orientation" from MATLAB
+            # Find the row with this header
+            orig_row = None
+            for i, row in df_matlab.iterrows():
+                if pd.notna(row[0]) and 'Original Orientation' in str(row[0]):
+                    orig_row = i
+                    break
+            
+            if orig_row is None:
+                print(f"  ⚠ Could not find 'Original Orientation' in MATLAB file")
+                continue
+            
+            # Read coordinate data (starting 2 rows after header)
+            matlab_origin = df_matlab.iloc[orig_row + 1, 1:4].values.astype(float)
+            matlab_ap = df_matlab.iloc[orig_row + 2, 1:4].values.astype(float)
+            matlab_si = df_matlab.iloc[orig_row + 3, 1:4].values.astype(float)
+            matlab_ml = df_matlab.iloc[orig_row + 4, 1:4].values.astype(float)
+            
+            # Run Python pipeline
+            coords_final, coords_unit, coords_aligned_unit = process_bone(
+                bone_file=input_file,
+                bone_type=bone_type,
+                side='left',
+                coord_sys=coord_sys_python,
+                joint_origin='center'
+            )
+            
+            # Extract Python results (original orientation)
+            python_origin = coords_final['origin']
+            python_ap = coords_final['ap_axis']
+            python_si = coords_final['si_axis']
+            python_ml = coords_final['ml_axis']
+            
+            # Save Python output
+            os.makedirs(os.path.join(python_output_dir, parent_dir), exist_ok=True)
+            output_file = os.path.join(python_output_dir, parent_dir, 
+                                      f"{seg_name}_{cs_name}_Center.csv")
+            save_coordinate_system(output_file, seg_name, bone_type, 'left',
+                                  coords_final, coords_unit, coords_aligned_unit, 'center')
+            
+            # Compute errors
+            # 1. Origin distance error
+            origin_dist = np.linalg.norm(python_origin - matlab_origin)
+            origin_errors.append(origin_dist)
+            
+            # 2. Angle errors between axes (in degrees)
+            def angle_between_vectors(v1, v2):
+                """Compute angle in degrees between two unit vectors."""
+                cos_angle = np.clip(np.dot(v1, v2), -1.0, 1.0)
+                return np.degrees(np.arccos(cos_angle))
+            
+            ap_angle = angle_between_vectors(python_ap, matlab_ap)
+            si_angle = angle_between_vectors(python_si, matlab_si)
+            ml_angle = angle_between_vectors(python_ml, matlab_ml)
+            
+            avg_angle = (ap_angle + si_angle + ml_angle) / 3.0
+            angle_errors.append(avg_angle)
+            
+            cases.append({
+                'file': basename,
+                'bone': bone_type,
+                'cs': cs_name,
+                'origin_dist': origin_dist,
+                'ap_angle': ap_angle,
+                'si_angle': si_angle,
+                'ml_angle': ml_angle,
+                'avg_angle': avg_angle
+            })
+            
+            print(f"  Origin distance: {origin_dist:.6f} mm")
+            print(f"  AP angle: {ap_angle:.4f}°, SI angle: {si_angle:.4f}°, ML angle: {ml_angle:.4f}°")
+            print()
+            
+        except Exception as e:
+            print(f"  ✗ Error: {e}")
+            print()
+            continue
+    
+    # Print summary statistics
+    print("=" * 80)
+    print("SUMMARY STATISTICS")
+    print("=" * 80)
+    
+    if len(origin_errors) == 0:
+        print("No results to compare.")
+        return {}
+    
+    origin_errors = np.array(origin_errors)
+    angle_errors = np.array(angle_errors)
+    
+    print(f"\nTotal cases compared: {len(origin_errors)}")
+    print()
+    print("Origin Distance Errors (mm):")
+    print(f"  Mean: {np.mean(origin_errors):.6f}")
+    print(f"  Std:  {np.std(origin_errors):.6f}")
+    print(f"  Min:  {np.min(origin_errors):.6f}")
+    print(f"  Max:  {np.max(origin_errors):.6f}")
+    print()
+    print("Angle Errors (degrees, average of AP/SI/ML):")
+    print(f"  Mean: {np.mean(angle_errors):.6f}")
+    print(f"  Std:  {np.std(angle_errors):.6f}")
+    print(f"  Min:  {np.min(angle_errors):.6f}")
+    print(f"  Max:  {np.max(angle_errors):.6f}")
+    print()
+    
+    # Find worst cases
+    worst_dist_idx = np.argmax(origin_errors)
+    worst_angle_idx = np.argmax(angle_errors)
+    
+    print("Worst Cases:")
+    print()
+    print(f"Largest Origin Distance Error ({origin_errors[worst_dist_idx]:.6f} mm):")
+    worst_dist_case = cases[worst_dist_idx]
+    print(f"  File: {worst_dist_case['file']}")
+    print(f"  Bone: {worst_dist_case['bone']}, CS: {worst_dist_case['cs']}")
+    print(f"  AP: {worst_dist_case['ap_angle']:.4f}°, SI: {worst_dist_case['si_angle']:.4f}°, ML: {worst_dist_case['ml_angle']:.4f}°")
+    print()
+    
+    print(f"Largest Angle Error ({angle_errors[worst_angle_idx]:.6f}°):")
+    worst_angle_case = cases[worst_angle_idx]
+    print(f"  File: {worst_angle_case['file']}")
+    print(f"  Bone: {worst_angle_case['bone']}, CS: {worst_angle_case['cs']}")
+    print(f"  Origin dist: {worst_angle_case['origin_dist']:.6f} mm")
+    print(f"  AP: {worst_angle_case['ap_angle']:.4f}°, SI: {worst_angle_case['si_angle']:.4f}°, ML: {worst_angle_case['ml_angle']:.4f}°")
+    print()
+    
+    return {
+        'n_cases': len(origin_errors),
+        'origin_mean': np.mean(origin_errors),
+        'origin_std': np.std(origin_errors),
+        'angle_mean': np.mean(angle_errors),
+        'angle_std': np.std(angle_errors),
+        'worst_distance_case': worst_dist_case,
+        'worst_angle_case': worst_angle_case,
+        'all_cases': cases
+    }
+
+
 if __name__ == '__main__':
     sys.exit(main())
