@@ -46,11 +46,11 @@ def reorient(aligned_points, coords_aligned, original_centroid, R, T, side='left
     
     # Re-center at (0,0,0) - MATLAB does this at line 40 of reorient.m
     # This is critical for the "Coordinate System at (0,0,0)" output
-    centroid_inv = combined_inv.mean(axis=0)
+    centroid_inv = combined_inv[:-6].mean(axis=0)
     combined_centered = combined_inv - centroid_inv
     
     # Add back original centroid
-    combined_final = combined_centered + original_centroid
+    combined_final = combined_centered + original_centroid[None, :]
     
     # Flip back if right side
     if side == 'right':

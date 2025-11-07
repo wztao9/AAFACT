@@ -476,7 +476,7 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
                 side='left',
                 coord_sys=coord_sys_python,
                 joint_origin='center',
-                output_dir=python_output_dir
+                output_dir=f'{python_output_dir}/{basename[:-len("_Center.xlsx")]}'
             )
             
             # Extract Python results (original orientation)
