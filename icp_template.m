@@ -166,17 +166,20 @@ if bone_indx >= 8 && bone_indx <= 12
     end
 end
 
+st = sqrt( mean( sum((nodes_template - mean(nodes_template,1)).^2, 2) ) );
+sb = sqrt( mean( sum((nodes - mean(nodes,1)).^2, 2) ) );
+multiplier = st / sb;
 % Determines maximum axis of bone model and compares it to the template
-multiplier = (max(nodes_template(:,a)) - min(nodes_template(:,a)))/(max(nodes(:,b)) - min(nodes(:,b)));
-parttib_multiplier = (max(nodes_template(:,1)) - min(nodes_template(:,1)))/(max(nodes(:,1)) - min(nodes(:,1)));
+% multiplier = (max(nodes_template(:,a)) - min(nodes_template(:,a)))/(max(nodes(:,b)) - min(nodes(:,b)));
+% parttib_multiplier = (max(nodes_template(:,1)) - min(nodes_template(:,1)))/(max(nodes(:,1)) - min(nodes(:,1)));
 
 % If the users model is smaller than the template, then this temporarly
 % makes it a similar size to the template, for icp alignment accuracy
-if multiplier > 1
-    nodes = nodes*multiplier;
-elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
-    nodes = nodes*parttib_multiplier;
-end
+% if multiplier > 1
+nodes = nodes*multiplier;
+% elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
+%     nodes = nodes*parttib_multiplier;
+% end
 
 %% Performing ICP alignment
 % This is the initial alignment with no rotation.
@@ -294,11 +297,11 @@ else
 end
 
 % This undoes the enlargening of the users model
-if multiplier > 1
-    aligned_nodes = aligned_nodes/multiplier;
-elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
-    aligned_nodes = aligned_nodes/parttib_multiplier;
-end
+% if multiplier > 1
+aligned_nodes = aligned_nodes/multiplier;
+% elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
+%     aligned_nodes = aligned_nodes/parttib_multiplier;
+% end
 
 % This ensures the fibular coodinate system is at the center of the TF
 % joint

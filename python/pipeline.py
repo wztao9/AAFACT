@@ -7,7 +7,7 @@ from utils import center, reorient, normalize_coords
 from io_utils import load_bone_file, load_stl, save_coordinates
 
 
-def align_to_template(bone_points, template_points, max_iterations=200, secondary_template=None, bone_type='talus'):
+def align_to_template(bone_points, template_points, max_iterations=200, bone_type='talus'):
     """Align bone to template using ICP with multiple initial rotations.
     
     Args:
@@ -36,12 +36,15 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
     # MATLAB: multiplier = (max(nodes_template(:,a)) - min(nodes_template(:,a)))/(max(nodes(:,b)) - min(nodes(:,b)))
     template_range = template_points[:, axis].max() - template_points[:, axis].min()
     bone_range = bone_points[:, axis].max() - bone_points[:, axis].min()
-    multiplier = template_range / bone_range if bone_range > 0 else 1.0
-    
+    # multiplier = template_range / bone_range if bone_range > 0 else 1.0
+    st = ((template_points - template_points.mean(axis=0, keepdims=True))**2).mean()**0.5
+    sb = ((bone_points - bone_points.mean(axis=0, keepdims=True))**2).mean()**0.5
+    multiplier = st / sb
+
     # Scale bone if it's smaller than template (multiplier > 1)
     scaled_points = bone_points.copy()
-    if multiplier > 1:
-        scaled_points = bone_points * multiplier
+    # if multiplier > 1:
+    scaled_points = bone_points * multiplier
     
     # Try multiple initial rotations
     rotations = [
@@ -73,16 +76,17 @@ def align_to_template(bone_points, template_points, max_iterations=200, secondar
     
     # If secondary template provided (for TT/ST talus), do additional alignment
     sR = None
-    if secondary_template is not None:
-        # Align primary template to secondary template
-        # MATLAB: icp(nodes_template2', nodes_template', ...) aligns template to template2
-        sR, _, _ = icp(secondary_template, template_points, max_iterations=25)
-        # Apply this rotation to the aligned points
-        best_aligned = (sR @ best_aligned.T).T
+    # if secondary_template is not None:
+    #     # Align primary template to secondary template
+    #     # MATLAB: icp(nodes_template2', nodes_template', ...) aligns template to template2
+    #     sR, sT, best_aligned = icp(secondary_template, template_points, max_iterations=25)
+    #     # Apply this rotation to the aligned points
+    #     best_aligned = (sR @ best_aligned.T).T
+
     
     # Undo the scaling (scale back down to original size)
-    if multiplier > 1:
-        best_aligned = best_aligned / multiplier
+    # if multiplier > 1:
+    best_aligned = best_aligned / multiplier
     
     return best_aligned, best_R, best_T, sR
 
@@ -168,8 +172,7 @@ def process_bone(bone_file, bone_type='talus', side='left',
     
     # Align to template
     print("  Aligning to template...")
-    aligned_points, R, T, sR = align_to_template(bone_centered, template_points, 
-                                                   secondary_template=secondary_template,
+    aligned_points, R, T, sR = align_to_template(bone_centered, secondary_template if (secondary_template is not None) else template_points, 
                                                    bone_type=bone_type)
     
     # Compute coordinate system
