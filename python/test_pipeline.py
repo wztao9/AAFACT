@@ -465,10 +465,10 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
             
             # Read coordinate data (starting 2 rows after header)
             matlab_origin = df_matlab.iloc[orig_row + 1, 1:4].values.astype(float)
-            matlab_ap = df_matlab.iloc[orig_row + 2, 1:4].values.astype(float)
-            matlab_si = df_matlab.iloc[orig_row + 3, 1:4].values.astype(float)
-            matlab_ml = df_matlab.iloc[orig_row + 4, 1:4].values.astype(float)
-            
+            matlab_ap = df_matlab.iloc[orig_row + 2, 1:4].values.astype(float) - matlab_origin
+            matlab_si = df_matlab.iloc[orig_row + 3, 1:4].values.astype(float) - matlab_origin
+            matlab_ml = df_matlab.iloc[orig_row + 4, 1:4].values.astype(float) - matlab_origin
+
             # Run Python pipeline
             coords_final, coords_unit, coords_aligned_unit = process_bone(
                 bone_file=input_file,
@@ -481,15 +481,11 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
             
             # Extract Python results (original orientation)
             # coords_final format: [origin, AP_end, origin, SI_end, origin, ML_end]
-            python_origin = coords_final[0, :]
-            python_ap = coords_final[1, :] - coords_final[0, :]  # AP axis vector
-            python_si = coords_final[3, :] - coords_final[2, :]  # SI axis vector
-            python_ml = coords_final[5, :] - coords_final[4, :]  # ML axis vector
+            python_origin = coords_unit[0, :]
+            python_ap = coords_unit[1, :] - coords_unit[0, :]  # AP axis vector
+            python_si = coords_unit[3, :] - coords_unit[2, :]  # SI axis vector
+            python_ml = coords_unit[5, :] - coords_unit[4, :]  # ML axis vector
             
-            # Normalize to unit vectors for angle comparison
-            python_ap = python_ap / np.linalg.norm(python_ap)
-            python_si = python_si / np.linalg.norm(python_si)
-            python_ml = python_ml / np.linalg.norm(python_ml)
             
             # Note: Python output already saved by process_bone to python_output_dir
             
@@ -497,7 +493,16 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
             # 1. Origin distance error
             origin_dist = np.linalg.norm(python_origin - matlab_origin)
             origin_errors.append(origin_dist)
-            
+
+            # load input file
+            m = trimesh.load(input_file)
+            # compute scale factor based on input mesh size
+            v = m.vertices
+            v = v - v.mean(axis=0, keepdims=True)
+            s = ((v**2).sum(axis=1).mean())**0.5
+            origin_dist_relative = origin_dist / s
+
+
             # 2. Angle errors between axes (in degrees)
             def angle_between_vectors(v1, v2):
                 """Compute angle in degrees between two unit vectors."""
@@ -516,14 +521,15 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
                 'bone': bone_type,
                 'cs': cs_name,
                 'origin_dist': origin_dist,
+                'origin_dist_relative': origin_dist_relative,
                 'ap_angle': ap_angle,
                 'si_angle': si_angle,
                 'ml_angle': ml_angle,
                 'avg_angle': avg_angle
             })
             
-            print(f"  Origin distance: {origin_dist:.6f} mm")
-            print(f"  AP angle: {ap_angle:.4f}°, SI angle: {si_angle:.4f}°, ML angle: {ml_angle:.4f}°")
+            print(f"  Origin distance: {origin_dist:.2f} mm. Relative: {origin_dist_relative*100:.2f}%")
+            print(f"  AP angle: {ap_angle:.2f}°, SI angle: {si_angle:.2f}°, ML angle: {ml_angle:.2f}°")
             print()
             
         except Exception as e:
@@ -564,8 +570,8 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
     
     print("Worst Cases:")
     print()
-    print(f"Largest Origin Distance Error ({origin_errors[worst_dist_idx]:.6f} mm):")
     worst_dist_case = cases[worst_dist_idx]
+    print(f"Largest Origin Distance Error ({origin_errors[worst_dist_idx]:.6f} mm, {worst_dist_case['origin_dist_relative']*100:.2f}%):")
     print(f"  File: {worst_dist_case['file']}")
     print(f"  Bone: {worst_dist_case['bone']}, CS: {worst_dist_case['cs']}")
     print(f"  AP: {worst_dist_case['ap_angle']:.4f}°, SI: {worst_dist_case['si_angle']:.4f}°, ML: {worst_dist_case['ml_angle']:.4f}°")
@@ -575,7 +581,7 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
     worst_angle_case = cases[worst_angle_idx]
     print(f"  File: {worst_angle_case['file']}")
     print(f"  Bone: {worst_angle_case['bone']}, CS: {worst_angle_case['cs']}")
-    print(f"  Origin dist: {worst_angle_case['origin_dist']:.6f} mm")
+    print(f"  Origin dist: {worst_angle_case['origin_dist']:.6f} mm, {worst_angle_case['origin_dist_relative']*100:.2f}%")
     print(f"  AP: {worst_angle_case['ap_angle']:.4f}°, SI: {worst_angle_case['si_angle']:.4f}°, ML: {worst_angle_case['ml_angle']:.4f}°")
     print()
     
