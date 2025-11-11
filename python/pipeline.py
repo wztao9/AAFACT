@@ -136,11 +136,25 @@ def process_bone(bone_file, bone_type='talus', side='left',
     elif bone_type == 'cuboid':
         if coord_sys == 'default':
             template_file = os.path.join(template_dir, 'Cuboid_Template.stl')
-        else:
+        elif coord_sys == 'radial':
             template_file = os.path.join(template_dir, 'Cuboid_Template2.stl')
-    elif bone_type == 'cuneiform':
-        # Would need more specific handling for medial/intermediate/lateral
+        elif coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Cuboid_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Cuboid_Template.stl')
+    elif bone_type == 'lat_cuneiform':
+        if coord_sys == 'default':
+            template_file = os.path.join(template_dir, 'Lateral_Cuneiform_Template.stl')
+        elif coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Lateral_Cuneiform_Template.stl')
+        elif coord_sys == 'radial':
+            template_file = os.path.join(template_dir, 'Lateral_Cuneiform_Template2.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Lateral_Cuneiform_Template.stl')
+    elif bone_type == 'med_cuneiform':
         template_file = os.path.join(template_dir, 'Medial_Cuneiform_Template.stl')
+    elif bone_type == 'mid_cuneiform':
+        template_file = os.path.join(template_dir, 'Intermediate_Cuneiform_Template.stl')
     elif bone_type == 'metatarsal':
         # Would need more specific handling for MT1-MT5
         template_file = os.path.join(template_dir, 'Metatarsal1_Template.stl')

@@ -2,6 +2,7 @@
 import numpy as np
 import sys
 import os
+import trimesh
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -385,9 +386,9 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
         'calcaneus': 'calcaneus',
         'navicular': 'navicular',
         'cuboid': 'cuboid',
-        'medial_cuneiform': 'medial_cuneiform',
-        'intermediate_cuneiform': 'intermediate_cuneiform',
-        'lateral_cuneiform': 'lateral_cuneiform',
+        'med_cuneiform': 'med_cuneiform',
+        'mid_cuneiform': 'mid_cuneiform',
+        'lat_cuneiform': 'lat_cuneiform',
         'first_metatarsal': 'first_metatarsal',
         'second_metatarsal': 'second_metatarsal',
         'third_metatarsal': 'third_metatarsal',
