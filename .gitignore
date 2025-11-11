@@ -184,3 +184,5 @@ octave-workspace
 
 # Matlab
 *.asv
+data/
+temp2/talus_left_coords.csv
