@@ -422,15 +422,18 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
     for matlab_file in sorted(matlab_files):
         # Parse filename: {seg_name}_{CS}_Center.xlsx
         basename = os.path.basename(matlab_file)
-        if not basename.endswith('_Center.xlsx'):
+        # if not basename.endswith('_Center.xlsx'):
+        if not basename.endswith('.xlsx'):
             continue
         
-        parts = basename[:-len('_Center.xlsx')].split('_')
-        if len(parts) < 2:
+        # parts = basename[:-len('_Center.xlsx')].split('_')
+        parts = basename[:-len('.xlsx')].split('_')
+        if len(parts) < 3:
             continue
         
-        cs_name = parts[-1]
-        seg_name = '_'.join(parts[:-1])
+        joint_name = parts[-1]
+        cs_name = parts[-2]
+        seg_name = '_'.join(parts[:-2])
         
         # Determine bone type from parent directory
         parent_dir = os.path.basename(os.path.dirname(matlab_file))
@@ -439,6 +442,8 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
         
         bone_type = bone_map[parent_dir]
         coord_sys_python = cs_map.get(cs_name, 'default')
+        # joint_origin = joint_name.lower()
+        joint_origin = '_'.join(joint_name.lower().split(' '))  # e.g., "Tibiotalar Surface" -> "tibiotalar_surface"
         
         # Find input file
         input_file = os.path.join(input_dir, parent_dir, seg_name + '.stl')
@@ -446,7 +451,7 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
             print(f"⚠ Input file not found: {input_file}")
             continue
         
-        print(f"Processing: {seg_name} ({bone_type}, {cs_name} CS)")
+        print(f"Processing: {seg_name} ({bone_type}, {cs_name} CS, {joint_origin} origin)")
         
         try:
             # Read MATLAB results
@@ -476,8 +481,8 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
                 bone_type=bone_type,
                 side='left',
                 coord_sys=coord_sys_python,
-                joint_origin='center',
-                output_dir=f'{python_output_dir}/{basename[:-len("_Center.xlsx")]}'
+                joint_origin= joint_origin,
+                output_dir=f'{python_output_dir}/{basename[:-len(".xlsx")]}'
             )
             
             # Extract Python results (original orientation)
@@ -506,9 +511,11 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
 
             # 2. Angle errors between axes (in degrees)
             def angle_between_vectors(v1, v2):
-                """Compute angle in degrees between two unit vectors."""
-                cos_angle = np.clip(np.dot(v1, v2), -1.0, 1.0)
-                return np.degrees(np.arccos(cos_angle))
+                """Compute angle in degrees between two vectors."""
+                v1_u = v1 / np.linalg.norm(v1)
+                v2_u = v2 / np.linalg.norm(v2)
+                cos_angle = np.degrees( np.arccos( v1_u @ v2_u ) )
+                return cos_angle
             
             ap_angle = angle_between_vectors(python_ap, matlab_ap)
             si_angle = angle_between_vectors(python_si, matlab_si)
