@@ -48,6 +48,21 @@ cs_configs('Metatarsal5') = {{'Vertical', 'Radial'}, [1,2]};
 cs_configs('Tibia') = {{'Default'}, [1]};
 cs_configs('Fibula') = {{'Default'}, [1]};
 
+% Joint configurations for each bone type
+joint_configs = containers.Map();
+joint_configs('Talus')               = {{'Center','Talonavicular Surface','Tibiotalar Surface','Subtalar Surface'},        [1,2,3,4]};
+joint_configs('Calcaneus')           = {{'Center','Calcaneocuboid Surface','Subtalar Surface'},                            [1,2,3]};
+joint_configs('Navicular')           = {{'Center','Talonavicular Surface','Navicular-Cuneiform Surface'},                  [1,2,3]};
+joint_configs('Cuboid')              = {{'Center','Calcaneocuboid Surface'},                                              [1,2]};
+joint_configs('Medial_Cuneiform')    = {{'Center','Navicular-Cuneiform Surface','Cuneiform-Metatarsal Surface','Intercuneiform Surface'}, [1,2,3,4]};
+joint_configs('Intermediate_Cuneiform') = joint_configs('Medial_Cuneiform');
+joint_configs('Lateral_Cuneiform')   = {{'Center','Navicular-Cuneiform Surface','Cuneiform-Metatarsal Surface','Intercuneiform Surface'}, [1,2,3,4]};
+for i = 1:5
+    joint_configs(sprintf('Metatarsal%d',i)) = {{'Center','Posterior Metatarsal Surface'}, [1,2]};
+end
+joint_configs('Tibia')  = {{'Center','Tibiotalar Surface'}, [1,2]};
+joint_configs('Fibula') = {{'Center','Talofibular Surface'}, [1,2]};
+
 % All bones are LEFT side, CENTER origin only
 side_indx = 2;  % Left
 joint_indx = 1; % Center
@@ -130,8 +145,29 @@ for b = 1:length(bone_list)
             % Calculate coordinate system
             [Temp_Coordinates, Temp_Nodes] = CoordinateSystem(aligned_nodes, bone_indx, bone_coord, side_indx);
             
-            % Joint origin is always center (joint_indx = 1)
+            
+            if cs == 1 && joint_configs.isKey(bone_name)
+                c = joint_configs(bone_name);
+                joint_names = c{1};
+                joint_indices = c{2};
+            else
+                joint_names = {'Center'};
+                joint_indices = 1;
+            end
+
+            for j = 1:length(joint_indices)
+                joint_indx = joint_indices(j);
+                joint_label = joint_names{j};
+
+                if joint_indx > 1
+                    if isempty(conlist)
             Joint = "Center";
+                    else
+                        [Temp_Coordinates, Joint] = JointOrigin(Temp_Coordinates, Temp_Nodes, conlist, bone_indx, joint_indx, side_indx);
+                    end
+                else
+                    Joint = "Center";
+                end
             
             % Attach coordinate system to nodes
             Temp_Nodes_Coords = [Temp_Nodes; Temp_Coordinates];
@@ -157,7 +193,7 @@ for b = 1:length(bone_list)
             end
             
             % Prepare output file name: {seg_name}_{CS}_Center.xlsx
-            output_name = sprintf('%s_%s_Center.xlsx', name_only, cs_name);
+                output_name = sprintf('%s_%s_%s.xlsx', name_only, cs_name, Joint);
             output_path = fullfile(output_anatomy_path, output_name);
             
             % Write to Excel
@@ -201,6 +237,7 @@ for b = 1:length(bone_list)
                 fprintf('    -> Saved: %s\n', output_name);
             catch ME
                 fprintf('    ERROR: Could not write Excel file: %s\n', ME.message);
+                end
             end
         end
     end
