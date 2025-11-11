@@ -27,39 +27,6 @@ def load_stl(filepath):
         return unique_vertices, faces
 
 
-def load_ply(filepath):
-    """Load PLY file and return vertices.
-    
-    Args:
-        filepath: Path to PLY file
-        
-    Returns:
-        vertices: Nx3 array of vertices
-    """
-    try:
-        import trimesh
-        mesh = trimesh.load(filepath)
-        return np.array(mesh.vertices)
-    except ImportError:
-        # Basic PLY parser
-        vertices = []
-        with open(filepath, 'r') as f:
-            header = True
-            vertex_count = 0
-            for line in f:
-                if header:
-                    if line.startswith('element vertex'):
-                        vertex_count = int(line.split()[2])
-                    if line.startswith('end_header'):
-                        header = False
-                        continue
-                else:
-                    if len(vertices) < vertex_count:
-                        parts = line.strip().split()
-                        vertices.append([float(parts[0]), float(parts[1]), float(parts[2])])
-        return np.array(vertices)
-
-
 def load_bone_file(filepath):
     """Load bone model from file.
     
@@ -72,10 +39,6 @@ def load_bone_file(filepath):
     """
     if filepath.endswith('.stl'):
         return load_stl(filepath)
-    elif filepath.endswith('.ply'):
-        vertices = load_ply(filepath)
-        # For PLY without faces, create dummy faces
-        return vertices, np.array([]).reshape(0, 3)
     else:
         raise ValueError(f"Unsupported file format: {filepath}")
 
