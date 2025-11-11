@@ -1,62 +1,7 @@
 """Joint origin calculation using ray-triangle intersection."""
 import numpy as np
+import trimesh
 
-
-def ray_triangle_intersection(ray_origin, ray_direction, vertices, faces):
-    """Find intersection points between a ray and triangular mesh.
-    
-    Args:
-        ray_origin: 1x3 ray origin point
-        ray_direction: 1x3 ray direction vector
-        vertices: Nx3 mesh vertices
-        faces: Mx3 mesh face indices
-        
-    Returns:
-        intersect_points: Kx3 array of intersection points
-    """
-    # Möller–Trumbore intersection algorithm
-    ray_direction = ray_direction / np.linalg.norm(ray_direction)
-    epsilon = 1e-6
-    
-    intersections = []
-    
-    for face in faces:
-        v0 = vertices[face[0]]
-        v1 = vertices[face[1]]
-        v2 = vertices[face[2]]
-        
-        edge1 = v1 - v0
-        edge2 = v2 - v0
-        
-        h = np.cross(ray_direction, edge2)
-        a = np.dot(edge1, h)
-        
-        if abs(a) < epsilon:
-            continue  # Ray parallel to triangle
-        
-        f = 1.0 / a
-        s = ray_origin - v0
-        u = f * np.dot(s, h)
-        
-        if u < 0.0 or u > 1.0:
-            continue
-        
-        q = np.cross(s, edge1)
-        v = f * np.dot(ray_direction, q)
-        
-        if v < 0.0 or u + v > 1.0:
-            continue
-        
-        t = f * np.dot(edge2, q)
-        
-        # Ray intersects triangle
-        intersection_point = ray_origin + t * ray_direction
-        intersections.append(intersection_point)
-    
-    if intersections:
-        return np.array(intersections)
-    else:
-        return np.array([]).reshape(0, 3)
 
 
 def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type, 
@@ -96,14 +41,12 @@ def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type,
         # For other bones, implement as needed
         return coords_aligned[0], coords_aligned
     
-    # Find intersections
-    intersections = ray_triangle_intersection(current_origin, axis_direction, 
-                                              aligned_points, faces)
-    
-    # If no intersections found, try opposite direction for CheckSI/CheckML cases
-    if len(intersections) == 0 and joint_type in ['tibiotalar_surface']:
-        intersections = ray_triangle_intersection(current_origin, -axis_direction,
-                                                  aligned_points, faces)
+    mesh = trimesh.Trimesh(vertices=aligned_points, faces=faces, process=False)
+    locations, index_ray, index_tri = mesh.ray.intersects_location(
+        ray_origins=current_origin[None, :],
+        ray_directions=axis_direction[None, :]
+    )
+    intersections = locations
     
     if len(intersections) == 0:
         print(f"  Warning: No joint intersection found, using center origin")
