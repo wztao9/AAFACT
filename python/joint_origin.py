@@ -20,46 +20,121 @@ def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type,
         joint_origin: 1x3 joint origin point
         coords_with_origin: 6x3 coordinate system translated to joint origin
     """
-    # Determine axis of interest (AOI) based on bone type and joint type
+    # Map AOI like MATLAB JointOrigin.m
+    ao = None
+
     if bone_type == 'talus':
         if joint_type == 'talonavicular_surface':
-            # Shoot ray in Anterior direction
-            current_origin = coords_aligned[0]  # AP origin
-            axis_direction = coords_aligned[1] - coords_aligned[0]  # AP direction
+            ao = ('ap', +1)   # Anterior
         elif joint_type == 'tibiotalar_surface':
-            # Shoot ray in Superior direction
-            current_origin = coords_aligned[2]  # SI origin
-            axis_direction = coords_aligned[3] - coords_aligned[2]  # SI direction
+            ao = ('si', +1)   # Superior
         elif joint_type == 'subtalar_surface':
-            # Shoot ray in Inferior direction
-            current_origin = coords_aligned[2]  # SI origin
-            axis_direction = -(coords_aligned[3] - coords_aligned[2])  # -SI direction
-        else:
-            # Center (default)
-            return coords_aligned[0], coords_aligned
+            ao = ('si', -1)   # Inferior
+
+    elif bone_type == 'calcaneus':
+        if joint_type == 'calcaneocuboid_surface':
+            ao = ('ap', +1)   # Anterior
+        elif joint_type == 'subtalar_surface':
+            ao = ('ap', +1)   # Anterior
+
+    elif bone_type == 'navicular':
+        if joint_type == 'talonavicular_surface':
+            ao = ('ap', -1)   # Posterior
+        elif joint_type == 'navicular-cuneiform_surface':
+            ao = ('ap', +1)   # Anterior
+
+    elif bone_type == 'cuboid':
+        if joint_type == 'calcaneocuboid_surface':
+            ao = ('ap', -1)   # Posterior
+
+    elif bone_type == 'med_cuneiform':
+        if joint_type == 'navicular-cuneiform_surface':
+            ao = ('ap', -1)                 # Posterior
+        elif joint_type == 'cuneiform_metatarsal_surface':
+            ao = ('ap', +1)                 # Anterior
+        elif joint_type == 'intercuneiform_surface':
+            ao = ('ml', -1)    # Lateral
+
+    elif bone_type == 'mid_cuneiform':
+        if joint_type == 'navicular-cuneiform_surface':
+            ao = ('ap', -1)                 # Posterior
+        elif joint_type == 'cuneiform_metatarsal_surface':
+            ao = ('ap', +1)                 # Anterior
+        elif joint_type == 'medial_intercuneiform_surface':
+            ao = ('ml', +1)     # Medial
+        elif joint_type == 'lateral_intercuneiform_surface':
+            ao = ('ml', -1)    # Lateral
+
+    elif bone_type == 'lat_cuneiform':
+        if joint_type == 'navicular-cuneiform_surface':
+            ao = ('ap', -1)                 # Posterior
+        elif joint_type == 'cuneiform_metatarsal_surface':
+            ao = ('ap', +1)                 # Anterior
+        elif joint_type == 'intercuneiform_surface':
+            ao = ('ml', +1)     # Medial
+
+    elif bone_type in ('first_metatarsal','second_metatarsal','third_metatarsal',
+                       'fourth_metatarsal','fifth_metatarsal'):
+        if joint_type == 'posterior_metatarsal_surface':
+            ao = ('ap', -1)                 # Posterior
+
+    elif bone_type == 'tibia':
+        if joint_type == 'tibiotalar_surface':
+            ao = ('si', -1)                 # CheckSI (prefer Inferior; fallback handled below)
+
+    elif bone_type == 'fibula':
+        if joint_type == 'talofibular_surface':
+            ao = ('ml', +1)     # CheckML (Medial; fallback handled below)
+
     else:
-        # For other bones, implement as needed
+        return coords_aligned[0], coords_aligned  # Center
+
+    if ao is None:
         return coords_aligned[0], coords_aligned
-    
+
+    # Build origin and direction from coords_aligned
+    axis, sign = ao
+    if axis == 'ap':
+        origin = coords_aligned[0]
+        vec = coords_aligned[1] - coords_aligned[0]
+    elif axis == 'si':
+        origin = coords_aligned[2]
+        vec = coords_aligned[3] - coords_aligned[2]
+    elif axis == 'ml':
+        origin = coords_aligned[4]
+        vec = coords_aligned[5] - coords_aligned[4]
+    else:
+        return coords_aligned[0], coords_aligned
+
+    dir_vec = sign * vec
+    if np.linalg.norm(dir_vec) == 0:
+        return coords_aligned[0], coords_aligned
+
+    # Emulate MATLAB lineType='line': cast both +dir and -dir, pick best
     mesh = trimesh.Trimesh(vertices=aligned_points, faces=faces, process=False)
-    locations, index_ray, index_tri = mesh.ray.intersects_location(
-        ray_origins=current_origin[None, :],
-        ray_directions=axis_direction[None, :]
+    dirs = np.vstack([dir_vec, -dir_vec]) / np.linalg.norm(dir_vec)
+    origins = np.vstack([origin, origin])
+
+    locations, _, _ = mesh.ray.intersects_location(
+        ray_origins=origins,
+        ray_directions=dirs
     )
-    intersections = locations
-    
-    if len(intersections) == 0:
-        print(f"  Warning: No joint intersection found, using center origin")
+    if len(locations) == 0:
+        # Optional fallback: try only the intended direction
+        locations, _, _ = mesh.ray.intersects_location(
+            ray_origins=origin[None, :],
+            ray_directions=(dir_vec / np.linalg.norm(dir_vec))[None, :]
+        )
+    if len(locations) == 0:
+        # As in MATLAB, keep center if no hit
         return coords_aligned[0], coords_aligned
-    
-    # Find closest intersection to the axis direction endpoint
-    # (MATLAB finds the one with minimum distance to axis_direction)
-    distances = np.linalg.norm(intersections - (current_origin + axis_direction), axis=1)
-    closest_idx = np.argmin(distances)
-    joint_origin = intersections[closest_idx]
-    
-    # Translate coordinate system to joint origin
+
+    # Choose intersection closest to axis endpoint (MATLAB logic)
+    endpoint = origin + dir_vec
+    d = np.linalg.norm(locations - endpoint, axis=1)
+    joint_origin = locations[np.argmin(d)]
+
+    # Translate CS to joint origin
     translation = joint_origin - coords_aligned[0]
     coords_with_origin = coords_aligned + translation
-    
     return joint_origin, coords_with_origin

@@ -159,18 +159,19 @@ for b = 1:length(bone_list)
                 joint_indx = joint_indices(j);
                 joint_label = joint_names{j};
 
+                Temp_Coordinates_ = Temp_Coordinates;
                 if joint_indx > 1
                     if isempty(conlist)
             Joint = "Center";
                     else
-                        [Temp_Coordinates, Joint] = JointOrigin(Temp_Coordinates, Temp_Nodes, conlist, bone_indx, joint_indx, side_indx);
+                        [Temp_Coordinates_, Joint] = JointOrigin(Temp_Coordinates, Temp_Nodes, conlist, bone_indx, joint_indx, side_indx);
                     end
                 else
                     Joint = "Center";
                 end
             
             % Attach coordinate system to nodes
-            Temp_Nodes_Coords = [Temp_Nodes; Temp_Coordinates];
+                Temp_Nodes_Coords = [Temp_Nodes; Temp_Coordinates_];
             
             % Reorient back to original orientation
             [~, ~, coords_final_unit, Temp_Coordinates_Unit] = reorient(Temp_Nodes_Coords, cm_nodes, side_indx, RTs);
