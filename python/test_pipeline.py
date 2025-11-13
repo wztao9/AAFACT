@@ -358,7 +358,7 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
                 """Compute angle in degrees between two vectors."""
                 v1_u = v1 / np.linalg.norm(v1)
                 v2_u = v2 / np.linalg.norm(v2)
-                cos_angle = np.degrees( np.arccos( v1_u @ v2_u ) )
+                cos_angle = np.degrees( np.arccos( np.clip( v1_u @ v2_u, -1.0, 1.0) ) )
                 return cos_angle
             
             ap_angle = angle_between_vectors(python_ap, matlab_ap)

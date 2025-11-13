@@ -50,7 +50,7 @@ def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type,
     elif bone_type == 'med_cuneiform':
         if joint_type == 'navicular-cuneiform_surface':
             ao = ('ap', -1)                 # Posterior
-        elif joint_type == 'cuneiform_metatarsal_surface':
+        elif joint_type == 'cuneiform-metatarsal_surface':
             ao = ('ap', +1)                 # Anterior
         elif joint_type == 'intercuneiform_surface':
             ao = ('ml', -1)    # Lateral
@@ -58,7 +58,7 @@ def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type,
     elif bone_type == 'mid_cuneiform':
         if joint_type == 'navicular-cuneiform_surface':
             ao = ('ap', -1)                 # Posterior
-        elif joint_type == 'cuneiform_metatarsal_surface':
+        elif joint_type == 'cuneiform-metatarsal_surface':
             ao = ('ap', +1)                 # Anterior
         elif joint_type == 'medial_intercuneiform_surface':
             ao = ('ml', +1)     # Medial
@@ -68,7 +68,7 @@ def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type,
     elif bone_type == 'lat_cuneiform':
         if joint_type == 'navicular-cuneiform_surface':
             ao = ('ap', -1)                 # Posterior
-        elif joint_type == 'cuneiform_metatarsal_surface':
+        elif joint_type == 'cuneiform-metatarsal_surface':
             ao = ('ap', +1)                 # Anterior
         elif joint_type == 'intercuneiform_surface':
             ao = ('ml', +1)     # Medial
