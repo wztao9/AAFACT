@@ -47,12 +47,13 @@ def align_to_template(bone_points, template_points, max_iterations=200, bone_typ
     scaled_points = bone_points * multiplier
     
     # Try multiple initial rotations
+    # NOTE that we assume the identity rotation is best, i.e., the bone is roughly aligned already
     rotations = [
         np.eye(3),
-        np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]),  # 90° around X
-        np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]]),  # 180° around X
-        np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]),  # 90° around Y
-        np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]),  # 90° around Z
+        # np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]),  # 90° around X
+        # np.array([[1, 0, 0], [0, -1, 0], [0, 0, -1]]),  # 180° around X
+        # np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]),  # 90° around Y
+        # np.array([[0, 1, 0], [-1, 0, 0], [0, 0, 1]]),  # 90° around Z
     ]
     
     best_error = float('inf')

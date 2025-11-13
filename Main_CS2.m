@@ -139,7 +139,7 @@ for b = 1:length(bone_list)
             [nodes, cm_nodes] = center(nodes, 1);
             
             % ICP alignment to template
-            better_start = 1;
+            better_start = 2;
             [aligned_nodes, RTs] = icp_template(bone_indx, nodes, bone_coord, better_start);
             
             % Calculate coordinate system
