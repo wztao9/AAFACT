@@ -143,28 +143,28 @@ else
     tibfib_switch = 1; % over 1/5 tibia/fibula is available
 end
 
-% Similar process as above for cropped metatarsals
-if bone_indx >= 8 && bone_indx <= 12
-    nodes_template_length = (max(nodes_template(:,a)) - min(nodes_template(:,a)));
-    if nodes_template_length/1.25 > max_nodes_length
-        temp = find(nodes_template(:,2) < (min(nodes_template(:,a)) + max_nodes_length));
-        nodes_template = [nodes_template(temp,1) nodes_template(temp,2) nodes_template(temp,3)];
-        x = (-10:1:10)';
-        z = (-10:1:10)';
-        [x, z] = meshgrid(x,z);
-        y = (min(nodes_template(:,a)) + max_nodes_length) .* ones(length(x(:,1)),1);
-        k = 1;
-        for n = 1:length(y)
-            for m = 1:length(y)
-                plane(k,:) = [x(m,n) y(1) z(m,n)];
-                k = k + 1;
-            end
-        end
+% % Similar process as above for cropped metatarsals
+% if bone_indx >= 8 && bone_indx <= 12
+%     nodes_template_length = (max(nodes_template(:,a)) - min(nodes_template(:,a)));
+%     if nodes_template_length/1.25 > max_nodes_length
+%         temp = find(nodes_template(:,2) < (min(nodes_template(:,a)) + max_nodes_length));
+%         nodes_template = [nodes_template(temp,1) nodes_template(temp,2) nodes_template(temp,3)];
+%         x = (-10:1:10)';
+%         z = (-10:1:10)';
+%         [x, z] = meshgrid(x,z);
+%         y = (min(nodes_template(:,a)) + max_nodes_length) .* ones(length(x(:,1)),1);
+%         k = 1;
+%         for n = 1:length(y)
+%             for m = 1:length(y)
+%                 plane(k,:) = [x(m,n) y(1) z(m,n)];
+%                 k = k + 1;
+%             end
+%         end
 
-        nodes_template = [nodes_template(:,1) nodes_template(:,2) nodes_template(:,3);
-            plane(:,1) plane(:,2) plane(:,3)];
-    end
-end
+%         nodes_template = [nodes_template(:,1) nodes_template(:,2) nodes_template(:,3);
+%             plane(:,1) plane(:,2) plane(:,3)];
+%     end
+% end
 
 st = sqrt( mean( sum((nodes_template - mean(nodes_template,1)).^2, 2) ) );
 sb = sqrt( mean( sum((nodes - mean(nodes,1)).^2, 2) ) );
