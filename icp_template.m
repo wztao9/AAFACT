@@ -426,11 +426,12 @@ end
 %     sT_fibula = [];
 % end
 
-if bone_indx >= 8 && bone_indx <= 12
-    [aligned_nodes,cm_meta] = center(aligned_nodes,1);
-else
-    cm_meta = [];
-end
+% if bone_indx >= 8 && bone_indx <= 12
+%     [aligned_nodes,cm_meta] = center(aligned_nodes,1);
+% else
+%     cm_meta = [];
+% end
+cm_meta = [];
 
 %% Combine all rotation and translation matricies
 RTs.iflip = iflip; % initial flip flip_out
