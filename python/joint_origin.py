@@ -73,8 +73,8 @@ def compute_joint_origin(coords_aligned, aligned_points, faces, bone_type,
         elif joint_type == 'intercuneiform_surface':
             ao = ('ml', +1)     # Medial
 
-    elif bone_type in ('first_metatarsal','second_metatarsal','third_metatarsal',
-                       'fourth_metatarsal','fifth_metatarsal'):
+    elif bone_type in ('metatarsal1','metatarsal2','metatarsal3',
+                       'metatarsal4','metatarsal5'):
         if joint_type == 'posterior_metatarsal_surface':
             ao = ('ap', -1)                 # Posterior
 

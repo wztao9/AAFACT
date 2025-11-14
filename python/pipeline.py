@@ -156,13 +156,35 @@ def process_bone(bone_file, bone_type='talus', side='left',
         template_file = os.path.join(template_dir, 'Medial_Cuneiform_Template.stl')
     elif bone_type == 'mid_cuneiform':
         template_file = os.path.join(template_dir, 'Intermediate_Cuneiform_Template.stl')
-    elif bone_type == 'metatarsal':
-        # Would need more specific handling for MT1-MT5
-        template_file = os.path.join(template_dir, 'Metatarsal1_Template.stl')
     elif bone_type == 'tibia':
         template_file = os.path.join(template_dir, 'Tibia_Template.stl')
     elif bone_type == 'fibula':
         template_file = os.path.join(template_dir, 'Fibula_Template.stl')
+    elif bone_type == 'metatarsal1':
+        if coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Metatarsal1_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Metatarsal1_Template2.stl')
+    elif bone_type == 'metatarsal2':
+        if coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Metatarsal2_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Metatarsal2_Template2.stl')
+    elif bone_type == 'metatarsal3':
+        if coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Metatarsal3_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Metatarsal3_Template2.stl')
+    elif bone_type == 'metatarsal4':
+        if coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Metatarsal4_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Metatarsal4_Template2.stl')
+    elif bone_type == 'metatarsal5':
+        if coord_sys == 'vertical':
+            template_file = os.path.join(template_dir, 'Metatarsal5_Template.stl')
+        else:
+            template_file = os.path.join(template_dir, 'Metatarsal5_Template2.stl')
     else:
         raise ValueError(f"Unknown bone type: {bone_type}")
     

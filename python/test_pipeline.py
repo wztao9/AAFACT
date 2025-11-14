@@ -233,11 +233,11 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
         'med_cuneiform': 'med_cuneiform',
         'mid_cuneiform': 'mid_cuneiform',
         'lat_cuneiform': 'lat_cuneiform',
-        'first_metatarsal': 'first_metatarsal',
-        'second_metatarsal': 'second_metatarsal',
-        'third_metatarsal': 'third_metatarsal',
-        'fourth_metatarsal': 'fourth_metatarsal',
-        'fifth_metatarsal': 'fifth_metatarsal',
+        'metatarsal1': 'metatarsal1',
+        'metatarsal2': 'metatarsal2',
+        'metatarsal3': 'metatarsal3',
+        'metatarsal4': 'metatarsal4',
+        'metatarsal5': 'metatarsal5',
         'tibia': 'tibia',
         'fibula': 'fibula'
     }
