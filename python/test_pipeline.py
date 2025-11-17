@@ -48,7 +48,6 @@ def test_matlab_validation_template2_to_template1():
         coords_final, coords_unit, coords_aligned_unit = process_bone(
             bone_file=bone_file,
             bone_type='talus',
-            side='left',
             coord_sys='default',  # Talonavicular CS
             joint_origin='tibiotalar_surface',
             output_dir='/tmp/test_output'
@@ -125,7 +124,6 @@ def test_matlab_validation_template1_to_template2():
         coords_final, coords_unit, coords_aligned_unit = process_bone(
             bone_file=bone_file,
             bone_type='talus',
-            side='left',
             coord_sys='tibiotalar',  # Tibiotalar CS
             joint_origin='tibiotalar_surface',
             output_dir='/tmp/test_output'
@@ -323,7 +321,6 @@ def compare_python_matlab_results(input_dir, matlab_output_dir, python_output_di
             coords_final, coords_unit, coords_aligned_unit = process_bone(
                 bone_file=input_file,
                 bone_type=bone_type,
-                side='left',
                 coord_sys=coord_sys_python,
                 joint_origin= joint_origin,
                 output_dir=f'{python_output_dir}/{basename[:-len(".xlsx")]}'

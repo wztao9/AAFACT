@@ -259,14 +259,13 @@ def align_to_template(bone_points, template_points, max_iterations=200, bone_typ
     return best_aligned, best_R, best_T, sR
 
 
-def process_bone(bone_file, bone_type='talus', side='left', 
+def process_bone(bone_file, bone_type='talus', 
                  coord_sys='default', joint_origin='center', template_dir=None, output_dir='output'):
     """Process a single bone and compute anatomical coordinate system.
     
     Args:
         bone_file: Path to bone model file
         bone_type: Type of bone
-        side: Laterality (left/right)
         coord_sys: Coordinate system type (default, tibiotalar, subtalar, etc.)
         joint_origin: Origin type ('center', 'tibiotalar_surface', 'talonavicular_surface', etc.)
         template_dir: Directory containing template files (default: ../Template_Bones relative to script)
@@ -277,6 +276,8 @@ def process_bone(bone_file, bone_type='talus', side='left',
         coords_unit: Unit coordinate system
         coords_aligned_unit: Aligned coordinate system
     """
+    # NOTE always left for now
+    side = 'left'
     print(f"Processing {bone_type} ({side})...")
     
     # Determine template directory if not provided
