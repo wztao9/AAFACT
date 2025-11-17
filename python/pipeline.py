@@ -384,11 +384,20 @@ def process_bone(bone_file, bone_type='talus', side='left',
     # Center the bone
     bone_centered, original_centroid = center(bone_points)
     
+    os.makedirs(output_dir, exist_ok=True)
+    # Save centered bone for debugging, use name, chosen coordinate system coord_sys for filename
+    # import trimesh
+    # m = trimesh.Trimesh(vertices=bone_centered, faces=bone_faces)
+    # m.export(os.path.join(output_dir, f"{os.path.splitext(os.path.basename(bone_file))[0].split('_')[0]}_{coord_sys}_beforeicp_py.stl"))
+    
     # Align to template
     print("  Aligning to template...")
     aligned_points, R, T, sR = align_to_template(bone_centered, secondary_template if (secondary_template is not None) else template_points, 
-                                                   bone_type=bone_type)
-    
+                                                   bone_type=bone_type, coord_sys=coord_sys)
+    # # save aligned bone for debugging
+    # m_aligned = trimesh.Trimesh(vertices=aligned_points, faces=bone_faces)
+    # m_aligned.export(os.path.join(output_dir, f"{os.path.splitext(os.path.basename(bone_file))[0].split('_')[0]}_{coord_sys}_aftericp_py.stl"))
+
     # Compute coordinate system
     print("  Computing coordinate system...")
     coords_aligned = compute_coordinate_system(aligned_points, bone_type, side, coord_sys)
@@ -413,7 +422,6 @@ def process_bone(bone_file, bone_type='talus', side='left',
     coords_unit = normalize_coords(coords_final)
     
     # Save results
-    os.makedirs(output_dir, exist_ok=True)
     subject_name = os.path.splitext(os.path.basename(bone_file))[0]
     output_file = os.path.join(output_dir, f"{bone_type}_{side}_coords.csv")
     
