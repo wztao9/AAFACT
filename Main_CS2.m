@@ -159,10 +159,6 @@ for b = 1:length(bone_list)
                     if joint_indx ~= bone_coord
                         continue;
                     end
-                else
-                    if joint_indx ~= 1 && joint_indx ~= bone_coord + 1
-                        continue;
-                    end
                 end
 
                 Temp_Coordinates_ = Temp_Coordinates;
