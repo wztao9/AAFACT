@@ -45,8 +45,8 @@ cs_configs('Metatarsal2') = {{'Vertical', 'Radial'}, [1,2]};
 cs_configs('Metatarsal3') = {{'Vertical', 'Radial'}, [1,2]};
 cs_configs('Metatarsal4') = {{'Vertical', 'Radial'}, [1,2]};
 cs_configs('Metatarsal5') = {{'Vertical', 'Radial'}, [1,2]};
-cs_configs('Tibia') = {{'Default'}, [1]};
-cs_configs('Fibula') = {{'Default'}, [1]};
+cs_configs('Tibia') = {{'Default', 'Tibiotalar'}, [1,2]};
+cs_configs('Fibula') = {{'Default', 'Talofibular'}, [1,2]};
 
 % Joint configurations for each bone type
 joint_configs = containers.Map();
@@ -146,18 +146,24 @@ for b = 1:length(bone_list)
             [Temp_Coordinates, Temp_Nodes] = CoordinateSystem(aligned_nodes, bone_indx, bone_coord, side_indx);
             
             
-            if cs == 1 && joint_configs.isKey(bone_name)
                 c = joint_configs(bone_name);
                 joint_names = c{1};
                 joint_indices = c{2};
-            else
-                joint_names = {'Center'};
-                joint_indices = 1;
-            end
 
             for j = 1:length(joint_indices)
                 joint_indx = joint_indices(j);
                 joint_label = joint_names{j};
+
+                % joint index must be the same as cs index for tibia and fibula as matlab
+                if (bone_indx == 13 || bone_indx == 14)
+                    if joint_indx ~= bone_coord
+                        continue;
+                    end
+                else
+                    if joint_indx ~= 1 && joint_indx ~= bone_coord + 1
+                        continue;
+                    end
+                end
 
                 Temp_Coordinates_ = Temp_Coordinates;
                 if joint_indx > 1

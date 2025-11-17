@@ -41,7 +41,7 @@ def icp_open3d(target, source, max_iterations=200, tolerance=1e-6):
     # Run ICP
     result = o3d.pipelines.registration.registration_icp(
         pcd_source, pcd_target, 
-        max_correspondence_distance=10.0,  # Adjust based on scale
+        max_correspondence_distance= 1e10,  # set a large distance to consider all points as matlab icp does
         init=np.eye(4),
         estimation_method=o3d.pipelines.registration.TransformationEstimationPointToPoint(),
         criteria=criteria
