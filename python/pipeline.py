@@ -7,7 +7,7 @@ from utils import center, reorient, normalize_coords
 from io_utils import load_bone_file, load_stl, save_coordinates
 
 
-def align_to_template(bone_points, template_points, max_iterations=200, bone_type='talus', coord_sys=None):
+def align_to_template(bone_points, template_points, max_iterations=200, bone_type='talus', coord_sys=None, secondary_template=None):
     """Align bone to template using ICP with multiple initial rotations.
     
     Args:
@@ -139,15 +139,16 @@ def align_to_template(bone_points, template_points, max_iterations=200, bone_typ
         'sT_tibia': None,
         'sR_fibula': None,
         'sT_fibula': None,
+        'sR_talus': None,
     }
-    # if secondary_template is not None:
-    #     # Align primary template to secondary template
-    #     # MATLAB: icp(nodes_template2', nodes_template', ...) aligns template to template2
-    #     sR, sT, best_aligned = icp(secondary_template, template_points, max_iterations=25)
-    #     # Apply this rotation to the aligned points
-    #     best_aligned = (sR @ best_aligned.T).T
+    if secondary_template is not None:
+        # Align primary template to secondary template
+        # MATLAB: icp(nodes_template2', nodes_template', ...) aligns template to template2
+        sR_, sT, best_aligned_ = icp(secondary_template, template_points, max_iterations=25)
+        # Apply this rotation to the aligned points
+        best_aligned = (sR_ @ best_aligned.T).T
+        sR['sR_talus'] = sR_
 
-    
     # Undo the scaling (scale back down to original size)
     # if multiplier > 1:
     best_aligned = best_aligned / multiplier
@@ -393,8 +394,8 @@ def process_bone(bone_file, bone_type='talus',
     
     # Align to template
     print("  Aligning to template...")
-    aligned_points, R, T, sR = align_to_template(bone_centered, secondary_template if (secondary_template is not None) else template_points, 
-                                                   bone_type=bone_type, coord_sys=coord_sys)
+    aligned_points, R, T, sR = align_to_template(bone_centered, template_points, 
+                                                   bone_type=bone_type, coord_sys=coord_sys, secondary_template=secondary_template)
     # # save aligned bone for debugging
     # m_aligned = trimesh.Trimesh(vertices=aligned_points, faces=bone_faces)
     # m_aligned.export(os.path.join(output_dir, f"{os.path.splitext(os.path.basename(bone_file))[0].split('_')[0]}_{coord_sys}_aftericp_py.stl"))
