@@ -194,6 +194,15 @@ for b = 1:length(bone_list)
                     Temp_Coordinates_Unit(3,:); ((Temp_Coordinates_Unit_TST(4,:) + Temp_Coordinates_Unit(4,:)).'/2)'
                     Temp_Coordinates_Unit(5,:); ((Temp_Coordinates_Unit_TST(6,:) + Temp_Coordinates_Unit(6,:)).'/2)'];
             end
+
+                %% Similarity
+                max_Z = similaritytest(Temp_Coordinates_Unit, bone_indx, bone_coord);
+                crit_Z = 1.645; % alpha = 0.05
+                if max_Z <= crit_Z
+                    fprintf(strcat('The Coordinate System is SIMILAR to existing data\n'))
+                else
+                    fprintf(strcat('The Coordinate System may be DIFFERENT than existing data, double check figure\n'))
+                end
             
             % Prepare output file name: {seg_name}_{CS}_Center.xlsx
                 output_name = sprintf('%s_%s_%s.xlsx', name_only, cs_name, Joint);

@@ -428,13 +428,69 @@ def process_bone(bone_file, bone_type='talus',
     
     # Format joint type for display
     joint_type_display = joint_origin.replace('_', ' ').title() if joint_origin != 'center' else 'Center'
-    
+
+    max_Z = similaritytest(coords_aligned_unit, bone_type, coord_sys)
+    crit_Z = 1.645  # alpha = 0.05
+    if max_Z <= crit_Z:
+        print('  The Coordinate System is SIMILAR to existing data')
+    else:
+        print('  The Coordinate System may be DIFFERENT than existing data')
+
     save_coordinates(output_file, coords_final, coords_unit, coords_aligned_unit, 
                     bone_type, side, subject_name, joint_type_display)
     print(f"  Saved to {output_file}")
     
     return coords_final, coords_unit, coords_aligned_unit
 
+
+def similaritytest(Temp_Coordinates_Unit, bone_type, coord_sys):
+    # python\average_mean_mat
+        dir_ave_mean = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'average_mean_mat')
+        mean_AP = np.loadtxt(os.path.join(dir_ave_mean, 'mean_AP.csv'), delimiter=',')
+        mean_SI = np.loadtxt(os.path.join(dir_ave_mean, 'mean_SI.csv'), delimiter=',')
+        mean_ML = np.loadtxt(os.path.join(dir_ave_mean, 'mean_ML.csv'), delimiter=',')
+        AP_std = np.loadtxt(os.path.join(dir_ave_mean, 'AP_std.csv'), delimiter=',')
+        ML_std = np.loadtxt(os.path.join(dir_ave_mean, 'ML_std.csv'), delimiter=',')
+        SI_std = np.loadtxt(os.path.join(dir_ave_mean, 'SI_std.csv'), delimiter=',')
+        AP_average = np.loadtxt(os.path.join(dir_ave_mean, 'AP_average.csv'), delimiter=',')
+        ML_average = np.loadtxt(os.path.join(dir_ave_mean, 'ML_average.csv'), delimiter=',')
+        SI_average = np.loadtxt(os.path.join(dir_ave_mean, 'SI_average.csv'), delimiter=',')
+
+    # list_bone = {'Talus', 'Calcaneus', 'Navicular', 'Cuboid', 'Medial_Cuneiform','Intermediate_Cuneiform',...
+    # 'Lateral_Cuneiform','Metatarsal1','Metatarsal2','Metatarsal3','Metatarsal4','Metatarsal5',...
+    # 'Tibia','Fibula'};
+
+        list_bone = ['talus', 'calcaneus', 'navicular', 'cuboid', 'med_cuneiform','intermediate_cuneiform', 'lateral_cuneiform', 'metatarsal1', 'metatarsal2','metatarsal3','metatarsal4','metatarsal5','tibia','fibula']
+
+        if bone_type == 'talus':
+            if coord_sys in ['default', 'talonavicular']:
+                m = 3
+            elif coord_sys in ['tibiotalar']:
+                m = 5
+            else:  # subtalar
+                m = 4
+        elif bone_type == 'calcaneus':
+            if coord_sys in ['default', 'calcaneocuboid']:
+                m = 1
+            else:  # subtalar
+                m = 2
+        else:
+            m = list_bone.index(bone_type) + 3
+
+        AP_diff = np.degrees( np.arctan2( np.linalg.norm( np.cross( Temp_Coordinates_Unit[1,:], mean_AP[m-1,:] ) ), Temp_Coordinates_Unit[1,:] @ mean_AP[m-1,:] ) )
+        SI_diff = np.degrees( np.arctan2( np.linalg.norm( np.cross( Temp_Coordinates_Unit[3,:], mean_SI[m-1,:] ) ), Temp_Coordinates_Unit[3,:] @ mean_SI[m-1,:] ) )
+        ML_diff = np.degrees( np.arctan2( np.linalg.norm( np.cross( Temp_Coordinates_Unit[5,:], mean_ML[m-1,:] ) ), Temp_Coordinates_Unit[5,:] @ mean_ML[m-1,:] ) )
+
+        if ML_diff > 90:
+            ML_diff = 180 - ML_diff
+
+        AP_Z = abs((AP_diff - AP_average[m-1]) / AP_std[m-1])
+        ML_Z = abs((ML_diff - ML_average[m-1]) / ML_std[m-1])
+        SI_Z = abs((SI_diff - SI_average[m-1]) / SI_std[m-1])
+
+        max_Z = max([AP_Z, ML_Z, SI_Z])
+
+        return max_Z
 
 def main():
     """Main pipeline with hardcoded examples."""
