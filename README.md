@@ -43,8 +43,6 @@ python pipeline.py
 - No GUI - pure command-line processing
 - Hardcoded bone types and lateralities
 - CSV output instead of Excel
-- ~500 lines of code (vs ~2000 MATLAB)
-- Comprehensive test suite
 
 See [python/README.md](python/README.md) for detailed usage.
 
