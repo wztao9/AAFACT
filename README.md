@@ -29,6 +29,25 @@ This code takes a bone model as an input (tibia, fibula, talus, calcaneus, navic
 
 ## Getting Started
 
+### Python Implementation (NEW!)
+
+A minimal Python translation is now available in the `/python` directory for automated batch processing without GUI:
+
+```bash
+cd python
+pip install -r requirements.txt
+python pipeline.py
+```
+
+**Features:**
+- No GUI - pure command-line processing
+- Hardcoded bone types and lateralities
+- CSV output instead of Excel
+
+See [python/README.md](python/README.md) for detailed usage.
+
+### MATLAB Implementation (Original)
+
 ### Dependencies
 
 If you want to run it in MATLAB:

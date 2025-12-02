@@ -143,40 +143,43 @@ else
     tibfib_switch = 1; % over 1/5 tibia/fibula is available
 end
 
-% Similar process as above for cropped metatarsals
-if bone_indx >= 8 && bone_indx <= 12
-    nodes_template_length = (max(nodes_template(:,a)) - min(nodes_template(:,a)));
-    if nodes_template_length/1.25 > max_nodes_length
-        temp = find(nodes_template(:,2) < (min(nodes_template(:,a)) + max_nodes_length));
-        nodes_template = [nodes_template(temp,1) nodes_template(temp,2) nodes_template(temp,3)];
-        x = (-10:1:10)';
-        z = (-10:1:10)';
-        [x, z] = meshgrid(x,z);
-        y = (min(nodes_template(:,a)) + max_nodes_length) .* ones(length(x(:,1)),1);
-        k = 1;
-        for n = 1:length(y)
-            for m = 1:length(y)
-                plane(k,:) = [x(m,n) y(1) z(m,n)];
-                k = k + 1;
-            end
-        end
+% % Similar process as above for cropped metatarsals
+% if bone_indx >= 8 && bone_indx <= 12
+%     nodes_template_length = (max(nodes_template(:,a)) - min(nodes_template(:,a)));
+%     if nodes_template_length/1.25 > max_nodes_length
+%         temp = find(nodes_template(:,2) < (min(nodes_template(:,a)) + max_nodes_length));
+%         nodes_template = [nodes_template(temp,1) nodes_template(temp,2) nodes_template(temp,3)];
+%         x = (-10:1:10)';
+%         z = (-10:1:10)';
+%         [x, z] = meshgrid(x,z);
+%         y = (min(nodes_template(:,a)) + max_nodes_length) .* ones(length(x(:,1)),1);
+%         k = 1;
+%         for n = 1:length(y)
+%             for m = 1:length(y)
+%                 plane(k,:) = [x(m,n) y(1) z(m,n)];
+%                 k = k + 1;
+%             end
+%         end
 
-        nodes_template = [nodes_template(:,1) nodes_template(:,2) nodes_template(:,3);
-            plane(:,1) plane(:,2) plane(:,3)];
-    end
-end
+%         nodes_template = [nodes_template(:,1) nodes_template(:,2) nodes_template(:,3);
+%             plane(:,1) plane(:,2) plane(:,3)];
+%     end
+% end
 
+st = sqrt( mean( sum((nodes_template - mean(nodes_template,1)).^2, 2) ) );
+sb = sqrt( mean( sum((nodes - mean(nodes,1)).^2, 2) ) );
+multiplier = st / sb;
 % Determines maximum axis of bone model and compares it to the template
-multiplier = (max(nodes_template(:,a)) - min(nodes_template(:,a)))/(max(nodes(:,b)) - min(nodes(:,b)));
-parttib_multiplier = (max(nodes_template(:,1)) - min(nodes_template(:,1)))/(max(nodes(:,1)) - min(nodes(:,1)));
+% multiplier = (max(nodes_template(:,a)) - min(nodes_template(:,a)))/(max(nodes(:,b)) - min(nodes(:,b)));
+% parttib_multiplier = (max(nodes_template(:,1)) - min(nodes_template(:,1)))/(max(nodes(:,1)) - min(nodes(:,1)));
 
 % If the users model is smaller than the template, then this temporarly
 % makes it a similar size to the template, for icp alignment accuracy
-if multiplier > 1
-    nodes = nodes*multiplier;
-elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
-    nodes = nodes*parttib_multiplier;
-end
+% if multiplier > 1
+nodes = nodes*multiplier;
+% elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
+%     nodes = nodes*parttib_multiplier;
+% end
 
 %% Performing ICP alignment
 % This is the initial alignment with no rotation.
@@ -214,7 +217,8 @@ fields = fieldnames(r);
 if better_start == 2
     field_name = fields{1};
     [R_temp,T_temp,E_temp] = icp(nodes_template',nodes', iterations,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp);
-    [Rwr_temp,Twr_temp,Ewr_temp] = icp(nodes_template',nodes', iterations,'Matching','kDtree','WorstRejection',0.1);
+    [Rwr_temp,Twr_temp,Ewr_temp] = icp(nodes_template',nodes', iterations,'Matching','kDtree');
+    E_temp = Ewr_temp; % Force choose worst rejection
     if E_temp(end) < Ewr_temp(end)
         R.(field_name) = R_temp;
         T.(field_name) = T_temp;
@@ -231,7 +235,8 @@ if better_start == 1
     for n = 1:numel(fields)
         rot = r.(fields{n}); % Access each rotation matrix using the field name
         rotnodes = nodes*rot; % Multiple nodes by rotation matrix
-        [~,~,error_temp] = icp(nodes_template',rotnodes', iterations_temp,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp); % Perform small ICP
+        % [~,~,error_temp] = icp(nodes_template',rotnodes', iterations_temp,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp); % Perform small ICP
+        [~,~,error_temp] = icp(nodes_template',rotnodes', iterations_temp,'Matching','kDtree'); % Perform small ICP
         E_short.(fields{n}) = error_temp(end); % Save the lowest error
     end
 
@@ -252,7 +257,8 @@ if better_start == 1
         rot = r.(field_name);  % Access the corresponding rotation matrix
         rotnodes = nodes * rot;  % Multiply nodes by the rotation matrix
         [R_temp,T_temp,E_temp] = icp(nodes_template',rotnodes', iterations,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp);
-        [Rwr_temp,Twr_temp,Ewr_temp] = icp(nodes_template',rotnodes', iterations,'Matching','kDtree','WorstRejection',0.1);
+        [Rwr_temp,Twr_temp,Ewr_temp] = icp(nodes_template',rotnodes', iterations,'Matching','kDtree');
+        E_temp = Ewr_temp; % Force choose worst rejection
         if E_temp(end) < Ewr_temp(end)
             R.(field_name) = R_temp;
             T.(field_name) = T_temp;
@@ -287,18 +293,19 @@ iT = best_T;  % The best T vector
 %% Additional alignments and adjustments
 % This loop performs an alignment for the TT CS of the talus
 if bone_indx == 1 && bone_coord >= 2
-    [sR_talus,~,~] = icp(nodes_template2',nodes_template',25,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp);
+    % [sR_talus,~,~] = icp(nodes_template2',nodes_template',25,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp);
+    [sR_talus,~,~] = icp(nodes_template2',nodes_template',25,'Matching','kDtree');
     aligned_nodes = (sR_talus*(aligned_nodes'))';
 else
     sR_talus = [];
 end
 
 % This undoes the enlargening of the users model
-if multiplier > 1
-    aligned_nodes = aligned_nodes/multiplier;
-elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
-    aligned_nodes = aligned_nodes/parttib_multiplier;
-end
+% if multiplier > 1
+aligned_nodes = aligned_nodes/multiplier;
+% elseif parttib_multiplier > 1 && tibfib_switch == 2 && bone_indx >= 13
+%     aligned_nodes = aligned_nodes/parttib_multiplier;
+% end
 
 % This ensures the fibular coodinate system is at the center of the TF
 % joint
@@ -314,7 +321,8 @@ if tibfib_switch == 1 && bone_indx == 14
         aligned_nodes_temp = aligned_nodes*parttib_multiplier;
     end
 
-    [sR_fibula,~,~] = icp(nodes_template',aligned_nodes_temp',25,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp);
+    % [sR_fibula,~,~] = icp(nodes_template',aligned_nodes_temp',25,'Matching','kDtree','EdgeRejection',logical(1),'Triangulation',con_temp);
+    [sR_fibula,~,~] = icp(nodes_template',aligned_nodes_temp',25,'Matching','kDtree');
     aligned_nodes = (sR_fibula*(aligned_nodes'))';
 
     sub = aligned_nodes(aligned_nodes(:,3) < 20,:);
@@ -361,12 +369,12 @@ if tibfib_switch == 1 && bone_indx == 13
     nodes_test3 = nodes_test1*rotz(180);
     nodes_test4 = nodes_test1*rotz(270);
 
-    [Rtw1,Ttw1,Etw1] = icp(nodes_template',nodes_test1', iterations,'Matching','kDtree','WorstRejection',0.1);
+    [Rtw1,Ttw1,Etw1] = icp(nodes_template',nodes_test1', iterations,'Matching','kDtree');
 
     if better_start == 1
-        [Rtw2,Ttw2,Etw2] = icp(nodes_template',nodes_test2', iterations,'Matching','kDtree','WorstRejection',0.1);
-        [Rtw3,Ttw3,Etw3] = icp(nodes_template',nodes_test3', iterations,'Matching','kDtree','WorstRejection',0.1);
-        [Rtw4,Ttw4,Etw4] = icp(nodes_template',nodes_test4', iterations,'Matching','kDtree','WorstRejection',0.1);
+        [Rtw2,Ttw2,Etw2] = icp(nodes_template',nodes_test2', iterations,'Matching','kDtree');
+        [Rtw3,Ttw3,Etw3] = icp(nodes_template',nodes_test3', iterations,'Matching','kDtree');
+        [Rtw4,Ttw4,Etw4] = icp(nodes_template',nodes_test4', iterations,'Matching','kDtree');
         Etw = min([Etw1(end),Etw2(end),Etw3(end),Etw4(end)]);
     else
         Etw = min([Etw1(end)]);
@@ -418,11 +426,12 @@ end
 %     sT_fibula = [];
 % end
 
-if bone_indx >= 8 && bone_indx <= 12
-    [aligned_nodes,cm_meta] = center(aligned_nodes,1);
-else
-    cm_meta = [];
-end
+% if bone_indx >= 8 && bone_indx <= 12
+%     [aligned_nodes,cm_meta] = center(aligned_nodes,1);
+% else
+%     cm_meta = [];
+% end
+cm_meta = [];
 
 %% Combine all rotation and translation matricies
 RTs.iflip = iflip; % initial flip flip_out
